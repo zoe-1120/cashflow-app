@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cash Flow Dashboard Suite</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+      color: #e0e0e8;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      text-align: center;
+      max-width: 800px;
+    }
+    .header {
+      margin-bottom: 50px;
+    }
+    .logo {
+      font-size: 48px;
+      font-weight: 700;
+      color: #d4af37;
+      margin-bottom: 16px;
+      letter-spacing: 2px;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: #8a8a9a;
+      margin-bottom: 8px;
+    }
+    .description {
+      font-size: 13px;
+      color: #6a6a7a;
+      line-height: 1.6;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 50px;
+    }
+    @media (max-width: 700px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+    .dashboard-link {
+      background: linear-gradient(135deg, #1a1f3a 0%, #10152d 100%);
+      border: 2px solid #2a3050;
+      border-radius: 12px;
+      padding: 40px 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: block;
+    }
+    .dashboard-link:hover {
+      border-color: #d4af37;
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(212, 175, 55, 0.2);
+    }
+    .card-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #d4af37;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: #8a8a9a;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .card-features {
+      text-align: left;
+      font-size: 12px;
+      color: #6a6a7a;
+      line-height: 1.8;
+    }
+    .feature {
+      margin-bottom: 8px;
+    }
+    .cta-text {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 32px;
+      background: #d4af37;
+      color: #0a0e27;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .dashboard-link:hover .cta-text {
+      background: #e0c055;
+    }
+    .note {
+      margin-top: 40px;
+      padding: 16px;
+      background: #1a1f3a;
+      border-left: 3px solid #d4af37;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #8a8a9a;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="logo">💰 CASH FLOW SUITE</div>
+    <div class="subtitle">Financial Intelligence Platform</div>
+    <div class="description">Choose your dashboard to analyze, monitor, and manage cash flow</div>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Executive Dashboard -->
+    <a href="index.html" class="dashboard-link">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Executive Dashboard</div>
+      <div class="card-desc">Comprehensive financial diagnostic report</div>
+      <div class="card-features">
+        <div class="feature">✓ 7-tab analysis (Overview, Cash Flow, WC, P&L, Debt, Actions)</div>
+        <div class="feature">✓ Multi-year comparisons & trends</div>
+        <div class="feature">✓ Deep diagnostic insights & recommendations</div>
+        <div class="feature">✓ Real-time input & scenario modeling</div>
+      </div>
+      <div class="cta-text">→ OPEN</div>
+    </a>
+
+    <!-- Internal Monitor -->
+    <a href="javascript:alert('The Live Monitor dashboard requires a Ruby server. Run: ruby server.rb')" class="dashboard-link" style="opacity: 0.7;">
+      <div class="card-icon">⚡</div>
+      <div class="card-title">Live Cash Monitor</div>
+      <div class="card-desc">Real-time monitoring with file uploads</div>
+      <div class="card-features">
+        <div class="feature">✓ Upload bank transactions (CSV/Excel)</div>
+        <div class="feature">✓ Daily cash balance tracking</div>
+        <div class="feature">✓ Live KPIs & cash runway forecast</div>
+        <div class="feature">✓ Transaction categorization</div>
+      </div>
+      <div class="cta-text">→ LOCAL ONLY</div>
+    </a>
+  </div>
+
+  <div class="note">
+    <strong>ℹ️ Note:</strong> The Executive Dashboard works standalone on Vercel. The Live Cash Monitor (requires file upload processing) works best locally with <code>ruby server.rb</code>. Both dashboards are available when running locally.
+  </div>
+</div>
+
+</body>
+</html>

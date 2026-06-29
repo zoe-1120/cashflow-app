@@ -1,0 +1,17 @@
+Date,Description,Amount,Type
+2026-06-26,Opening Balance,500000.00,in
+2026-06-27,Sales - Project A,25000.00,in
+2026-06-27,Payroll & Benefits,45000.00,out
+2026-06-27,Supplier Payment - Raw Materials,18500.00,out
+2026-06-27,Utilities Bill,2500.00,out
+2026-06-28,Sales - Project B,18000.00,in
+2026-06-28,Office Rent,8000.00,out
+2026-06-28,Insurance Premium,3500.00,out
+2026-06-28,Equipment Maintenance,1200.00,out
+2026-06-29,Sales - Client C,32000.00,in
+2026-06-29,Marketing & Advertising,5000.00,out
+2026-06-29,Bank Charges,150.00,out
+2026-06-29,Loan Repayment,10000.00,out
+2026-06-30,Sales - Client D,15000.00,in
+2026-06-30,Supplies & Materials,4800.00,out
+2026-06-30,Travel Expenses,2200.00,out
