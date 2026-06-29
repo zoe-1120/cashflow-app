@@ -137,6 +137,12 @@ server.mount_proc('/') do |req, res|
     <div class="description">Choose your dashboard to analyze, monitor, and manage cash flow</div>
   </div>
 
+  <div style="margin-bottom: 30px; text-align: center;">
+    <a href="/import" style="display: inline-block; padding: 12px 24px; background: #d4af37; color: #0a0e27; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px; margin-bottom: 20px;">
+      📥 导入财务数据 · IMPORT DATA
+    </a>
+  </div>
+
   <div class="dashboard-grid">
     <!-- Executive Dashboard -->
     <a href="/boss" class="dashboard-link">
@@ -619,6 +625,13 @@ render();
 </body>
 </html>
 MONITOR_HTML
+end
+
+# ============ IMPORT DATA (File Upload & Parsing) ============
+server.mount_proc('/import') do |req, res|
+  res.content_type = 'text/html;charset=utf-8'
+  import_file = File.read('./import.html', encoding: 'UTF-8') rescue '<h1>import.html not found</h1>'
+  res.body = import_file
 end
 
 # ============ FILE UPLOAD API ============

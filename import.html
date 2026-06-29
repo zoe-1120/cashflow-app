@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>导入财务数据 - Cash Flow Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg: #002528;
+      --card: #003330;
+      --gold: #b09b7b;
+      --text: #e8e0d4;
+      --muted: #9a9080;
+      --red: #e05c5c;
+      --green: #4dbf91;
+      --border: #005050;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 14px;
+    }
+    .header {
+      background: linear-gradient(135deg, #001a1c, #002528);
+      border-bottom: 2px solid var(--gold);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .nav-link {
+      padding: 8px 16px;
+      background: var(--border);
+      border-radius: 4px;
+      text-decoration: none;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .nav-link:hover { background: var(--gold); color: var(--bg); }
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .sec-hd {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      background: #001a20;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 12px;
+    }
+    .drop-zone.hover { border-color: var(--gold); background: #002a35; }
+    .drop-zone input { display: none; }
+    .drop-zone p { margin: 8px 0; color: var(--muted); }
+    .btn {
+      padding: 10px 20px;
+      background: var(--gold);
+      color: #001a1c;
+      border: none;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+    }
+    .btn:hover { background: #c9a66e; }
+    .result-box {
+      background: #001a20;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .result-box.success { border-color: var(--green); background: #001a0e; color: var(--green); }
+    .result-box.error { border-color: var(--red); background: #1a0505; color: var(--red); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 11px;
+    }
+    th {
+      padding: 7px;
+      background: #001820;
+      border: 1px solid var(--border);
+      text-align: left;
+      font-weight: 600;
+      color: var(--gold);
+    }
+    td {
+      padding: 7px;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .data-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .form-group label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-group input {
+      background: #001820;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .form-group input:focus { outline: none; border-color: var(--gold); }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .btn-group .btn { flex: 1; margin: 0; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">📥 导入财务数据 · IMPORT DATA</div>
+  <a href="/" class="nav-link">← 返回首页</a>
+</div>
+
+<div class="container">
+  <div class="section">
+    <div class="sec-hd">上传文件 · UPLOAD</div>
+    <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">支持：Excel (.xlsx) / CSV (.csv)</p>
+
+    <div class="drop-zone" id="dropZone">
+      <p style="font-size: 14px; font-weight: 700;">📤 拖放文件到此</p>
+      <p style="font-size: 11px;">或点击选择</p>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+    </div>
+
+    <div id="result" class="result-box" style="display: none;"></div>
+  </div>
+
+  <div class="section" id="previewSection" style="display: none;">
+    <div class="sec-hd">数据预览 · PREVIEW</div>
+    <div id="preview"></div>
+  </div>
+
+  <div class="section" id="formSection" style="display: none;">
+    <div class="sec-hd">提取的数据 · EXTRACTED DATA</div>
+    <div class="data-form" id="dataForm"></div>
+    <div class="btn-group">
+      <button class="btn" onclick="copyData()">📋 复制</button>
+      <button class="btn" onclick="goDashboard()">✅ 前往 Dashboard</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const resultBox = document.getElementById('result');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('hover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('hover'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  resultBox.style.display = 'block';
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    parseExcel(file);
+  } else if (ext === 'csv') {
+    parseCSV(file);
+  } else {
+    showResult('不支持的格式。使用 Excel 或 CSV。', 'error');
+  }
+}
+
+function parseExcel(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet);
+      processData(json);
+      showResult('✅ 成功导入 ' + json.length + ' 行', 'success');
+    } catch (err) {
+      showResult('❌ 解析失败', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseCSV(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    Papa.parse(e.target.result, {
+      header: true,
+      complete: results => {
+        processData(results.data);
+        showResult('✅ 成功导入 ' + results.data.length + ' 行', 'success');
+      },
+      error: err => showResult('❌ 解析失败', 'error')
+    });
+  };
+  reader.readAsText(file);
+}
+
+function processData(rows) {
+  const data = {};
+  const preview = rows.slice(0, 3);
+  
+  document.getElementById('preview').innerHTML = '<p>已导入 ' + rows.length + ' 行数据</p>';
+  document.getElementById('previewSection').style.display = 'block';
+
+  const fields = ['company', 'period', 'cash', 'od', 'rec', 'inv', 'pay', 'equity', 'ltl', 'stl', 'rev', 'cogs', 'adm', 'fin'];
+  const labels = { company: '公司名', period: '期间', cash: '现金', od: '透支', rec: '应收', inv: '库存', pay: '应付', equity: '权益', ltl: '长期贷', stl: '短期贷', rev: '营收', cogs: '成本', adm: '行政费', fin: '财务费' };
+
+  document.getElementById('dataForm').innerHTML = fields.map(f => `
+    <div class="form-group">
+      <label>${labels[f]}</label>
+      <input type="text" data-key="${f}" value="">
+    </div>
+  `).join('');
+
+  document.getElementById('formSection').style.display = 'block';
+}
+
+function showResult(msg, type = 'error') {
+  resultBox.textContent = msg;
+  resultBox.className = 'result-box ' + type;
+}
+
+function copyData() {
+  const text = Array.from(document.querySelectorAll('[data-key]')).map(el => `${el.previousElementSibling.textContent}: ${el.value}`).join('\n');
+  navigator.clipboard.writeText(text);
+  alert('✅ 已复制');
+}
+
+function goDashboard() {
+  alert('✅ 请手动在 Dashboard 的 "Live Input" 标签页中输入数据');
+  window.location.href = '/boss';
+}
+</script>
+
+</body>
+</html>
