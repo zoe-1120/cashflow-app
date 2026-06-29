@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Cash Flow Dashboard</title>
+<style>
+:root{
+  --bg:#002528;--bg2:#003330;--bg3:#004040;
+  --gold:#b09b7b;--gold2:#9a8a6e;
+  --red:#e05c5c;--amber:#e0a95c;--green:#4dbf91;--blue:#5ca8e0;
+  --text:#e8e0d4;--muted:#9a9080;
+  --card:#003330;--border:#005050;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;font-size:14px;min-height:100vh}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#001a1c,#002528);border-bottom:2px solid var(--gold2);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:22px;font-weight:700;color:var(--gold);letter-spacing:1px}
+.logo span{color:var(--text);font-weight:300}
+.hdr-right{text-align:right}
+.hdr-company{font-size:14px;font-weight:600}
+.hdr-period{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* TABS */
+.tabs{display:flex;background:#001e22;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:11px 20px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;color:var(--muted);transition:all .2s;font-size:13px;flex-shrink:0}
+.tab:hover{color:var(--text);background:#002025}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);background:#002025}
+
+/* PAGES */
+.page{display:none;padding:20px 24px;max-width:1120px;margin:0 auto}
+.page.active{display:block}
+
+/* CARDS */
+.cards{display:grid;gap:14px;margin-bottom:18px}
+.c4{grid-template-columns:repeat(4,1fr)}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:720px){.c4,.c3{grid-template-columns:1fr 1fr}.c2{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.card-r::before{background:var(--red)}
+.card-a::before{background:var(--amber)}
+.card-g::before{background:var(--green)}
+.card-b::before{background:var(--blue)}
+
+.c-en{font-size:10px;color:var(--gold2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.c-title{font-size:12px;color:var(--text);margin-bottom:6px;font-weight:500}
+.c-val{font-size:26px;font-weight:800;margin-bottom:6px;line-height:1}
+.c-note{font-size:11px;color:var(--muted);line-height:1.5}
+.c-impact{font-size:11px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:#c0a070;line-height:1.4}
+.c-impact b{color:var(--amber)}
+
+/* SECTIONS */
+.section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px}
+.sec-title{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:14px;letter-spacing:.3px}
+.sec-subtitle{font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:680px){.two-col{grid-template-columns:1fr}}
+
+/* IMPACT BOX */
+.impact-box{background:#1a0e00;border:1px solid #5a3a00;border-radius:8px;padding:12px 14px;margin-top:12px}
+.impact-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--amber);margin-bottom:6px;font-weight:700}
+.impact-row{display:flex;gap:10px;margin-bottom:5px;font-size:12px;line-height:1.4}
+.impact-row:last-child{margin-bottom:0}
+.impact-icon{flex-shrink:0;margin-top:1px}
+
+/* EXPLAIN BOX */
+.explain{background:#001520;border-left:3px solid var(--gold2);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#b0a898;line-height:1.7}
+.explain b{color:var(--gold)}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+td{padding:8px 10px;border-bottom:1px solid #003030}
+tr:last-child td{border-bottom:none}
+.tr-total td{font-weight:700;border-top:1px solid var(--border);padding-top:10px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* URGENT */
+.urgent-banner{background:linear-gradient(135deg,#2a0000,#1a0808);border:2px solid var(--red);border-radius:14px;padding:24px;margin-bottom:18px;text-align:center}
+.urg-lbl{font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:3px;margin-bottom:10px;font-weight:700}
+.urg-main{font-size:38px;font-weight:900;color:#fff;margin-bottom:8px}
+.urg-sub{font-size:13px;color:#c09090;max-width:500px;margin:0 auto}
+
+/* SCENARIO */
+.sc-row{display:grid;grid-template-columns:130px 1fr 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:center}
+.sc-row:last-child{border-bottom:none}
+.sc-lbl{color:var(--muted);font-size:12px}
+
+/* ACTIONS */
+.act-item{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border)}
+.act-item:last-child{border-bottom:none}
+.act-num{background:var(--gold);color:#001a1c;width:26px;height:26px;min-width:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+.act-body b{display:block;margin-bottom:3px;font-size:13px}
+.act-body span{font-size:12px;color:var(--muted);line-height:1.5}
+
+/* CCC row */
+.ccc-formula{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;background:#001820;border-radius:8px;padding:12px 16px}
+.ccc-box{text-align:center}
+.ccc-days{font-size:22px;font-weight:700}
+.ccc-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.ccc-op{font-size:20px;color:var(--border);padding:0 4px}
+.ccc-result{background:#002a20;border:1px solid #005040;border-radius:8px;padding:8px 16px;text-align:center}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700}
+.badge-r{background:#3a0000;color:var(--red)} .badge-a{background:#2a1f00;color:var(--amber)} .badge-g{background:#003020;color:var(--green)}
+
+/* DEBT LEGEND */
+.d-legend-item{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:11px}
+.d-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.fg input{background:#001e22;border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-size:14px;width:100%;transition:border-color .15s}
+.fg input:focus{outline:none;border-color:var(--gold2)}
+.fg input:hover{border-color:#007070}
+.form-sec{grid-column:1/-1;font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;padding:10px 0 4px;border-top:1px solid var(--border);margin-top:6px}
+.btn-reset{background:var(--gold);color:#001a1c;border:none;padding:10px 26px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;margin-top:14px;letter-spacing:.3px}
+.btn-reset:hover{background:var(--gold2)}
+
+/* COLORS */
+.red{color:var(--red)} .amber{color:var(--amber)} .green{color:var(--green)} .blue{color:var(--blue)} .gold{color:var(--gold)} .muted{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="logo">Cash Flow <span>Dashboard</span></div>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-company" id="hdr-co">—</div>
+    <div class="hdr-period" id="hdr-per">—</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="go(0)">⚠ Urgent 紧急</div>
+  <div class="tab" onclick="go(1)">Overview 概览</div>
+  <div class="tab" onclick="go(2)">Working Capital 营运资金</div>
+  <div class="tab" onclick="go(3)">P&amp;L 损益</div>
+  <div class="tab" onclick="go(4)">Debt 债务</div>
+  <div class="tab" onclick="go(5)">Actions 行动</div>
+  <div class="tab" onclick="go(6)">✎ Live Input 实时输入</div>
+</div>
+
+<!-- ══════ PAGE 0: URGENT ══════ -->
+<div class="page active" id="page-0">
+  <div class="urgent-banner">
+    <div class="urg-lbl">⚠ Immediate Attention Required 需要立即关注</div>
+    <div class="urg-main" id="u-main">—</div>
+    <div class="urg-sub" id="u-sub">—</div>
+  </div>
+
+  <div class="cards c4">
+    <div class="card card-r">
+      <div class="c-en">Net Cash 净现金</div>
+      <div class="c-title">Bank Balance − Overdraft</div>
+      <div class="c-val red" id="u-nc">—</div>
+      <div class="c-note">银行存款扣除透支后的实际现金</div>
+      <div class="c-impact"><b>后续影响：</b>净现金为负代表公司靠透支运作，银行随时可取消额度，引发资金断裂。</div>
+    </div>
+    <div class="card card-a">
+      <div class="c-en">Monthly Burn 每月净亏损</div>
+      <div class="c-title">Net Profit ÷ 12</div>
+      <div class="c-val amber" id="u-burn">—</div>
+      <div class="c-note">每个月平均烧掉多少钱</div>
+      <div class="c-impact"><b>后续影响：</b>如持续亏损不纠正，资金会按此速度耗尽，直至无法支付供应商或员工薪资。</div>
+    </div>
+    <div class="card card-r">
+      <div class="c-en">Equity 股东权益</div>
+      <div class="c-title">Total Assets − Total Liabilities</div>
+      <div class="c-val" id="u-eq">—</div>
+      <div class="c-note">公司净值——负数代表资不抵债</div>
+      <div class="c-impact"><b>后续影响：</b>权益持续为负，银行将拒绝贷款，客户与供应商对公司信心下降。</div>
+    </div>
+    <div class="card card-a">
+      <div class="c-en">Gross Margin 毛利率</div>
+      <div class="c-title">Gross Profit ÷ Revenue</div>
+      <div class="c-val" id="u-gm">—</div>
+      <div class="c-note">每RM1收入，扣货物成本后剩多少</div>
+      <div class="c-impact"><b>后续影响：</b>毛利率过低，无法覆盖行政与财务开销，越卖越亏。</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">🕐 If Nothing Changes — What Happens Next 若不采取行动</div>
+    <div class="explain">每个月亏损 <b id="sc-burn-lbl">—</b>，以下是未来现金状况预测。这不是最坏情况——这是<b>什么都不做的情况</b>。</div>
+    <div class="sc-row" style="font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase">
+      <div>Horizon 时段</div><div>Cash Position 现金状况</div><div>Status 状态</div>
+    </div>
+    <div class="sc-row"><div class="sc-lbl">3 months 3个月</div><div id="sc3" style="font-weight:600">—</div><div id="sc3s">—</div></div>
+    <div class="sc-row"><div class="sc-lbl">6 months 6个月</div><div id="sc6" style="font-weight:600">—</div><div id="sc6s">—</div></div>
+    <div class="sc-row"><div class="sc-lbl">12 months 12个月</div><div id="sc12" style="font-weight:600">—</div><div id="sc12s">—</div></div>
+    <div class="impact-box" style="margin-top:14px">
+      <div class="impact-title">⚡ 后续影响 — Downstream Impact</div>
+      <div class="impact-row"><span class="impact-icon">📌</span><span>现金耗尽 → 无法按时付供应商 → 供应链断裂 → 无货可卖</span></div>
+      <div class="impact-row"><span class="impact-icon">📌</span><span>透支额度超限 → 银行冻结账户 → 员工薪水无法发出</span></div>
+      <div class="impact-row"><span class="impact-icon">📌</span><span>权益持续为负 → 无法申请新贷款 → 错过扩张机会</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">✅ This Week — 3 Actions 本周必须做的三件事</div>
+    <div id="urg-actions"></div>
+  </div>
+</div>
+
+<!-- ══════ PAGE 1: OVERVIEW ══════ -->
+<div class="page" id="page-1">
+  <div class="explain">
+    <b>Overview 概览</b> — 公司财务健康的30秒快照。绿色 = 良好，橙色 = 需关注，红色 = 立即行动。<br>
+    <b>给老板的一句话：</b>看净利润和净现金这两个数字，正数才是真正赚钱，负数代表每天都在烧钱。
+  </div>
+  <div class="cards c4">
+    <div class="card card-b">
+      <div class="c-en">Revenue 营业额</div><div class="c-title">Total Sales This Period</div>
+      <div class="c-val blue" id="ov-rev">—</div>
+      <div class="c-note" id="ov-revg">同比增长—</div>
+      <div class="c-impact"><b>营业额</b>只是收入，不是利润。要看扣掉成本后还剩多少。</div>
+    </div>
+    <div class="card card-g">
+      <div class="c-en">Gross Profit 毛利</div><div class="c-title">Revenue − Cost of Goods</div>
+      <div class="c-val" id="ov-gp">—</div>
+      <div class="c-note" id="ov-gm">毛利率 —</div>
+      <div class="c-impact"><b>毛利</b>是扣货物成本后剩余。低于25%代表产品定价或采购需要检讨。</div>
+    </div>
+    <div class="card card-r">
+      <div class="c-en">Net Profit / Loss 净利润</div><div class="c-title">After ALL Expenses</div>
+      <div class="c-val" id="ov-net">—</div>
+      <div class="c-note">扣除所有开销后的真正盈亏</div>
+      <div class="c-impact"><b>净利润为负</b> = 公司实际亏损，每月消耗现金储备。</div>
+    </div>
+    <div class="card card-r">
+      <div class="c-en">Net Cash 净现金</div><div class="c-title">Bank Balance − Overdraft</div>
+      <div class="c-val" id="ov-nc">—</div>
+      <div class="c-note">扣透支后实际可动用的现金</div>
+      <div class="c-impact"><b>净现金为负</b> = 靠银行钱运作，随时有断链风险。</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="section">
+      <div class="sec-title">Revenue vs Costs 收入与成本对比</div>
+      <svg id="svg-ov1" width="100%" height="190" viewBox="0 0 320 190"></svg>
+    </div>
+    <div class="section">
+      <div class="sec-title">Margin Trend 利润率对比 <span class="sec-subtitle">本年 vs 去年</span></div>
+      <svg id="svg-ov2" width="100%" height="190" viewBox="0 0 320 190"></svg>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Financial Health Checklist 财务健康检查</div>
+    <table>
+      <tr><th>Indicator 指标</th><th>What It Means 意思</th><th>Value 数值</th><th>Benchmark 标准</th><th>Status</th></tr>
+      <tr><td><b>Gross Margin 毛利率</b></td><td class="muted" style="font-size:11px">每RM1收入扣货物成本后剩余</td><td class="num" id="hc-gm">—</td><td class="num">≥ 25%</td><td id="hc-gms">—</td></tr>
+      <tr><td><b>Net Margin 净利率</b></td><td class="muted" style="font-size:11px">每RM1收入最终赚到的钱</td><td class="num" id="hc-nm">—</td><td class="num">≥ 5%</td><td id="hc-nms">—</td></tr>
+      <tr><td><b>CCC Days 现金周转天数</b></td><td class="muted" style="font-size:11px">从进货到收到客户款需多少天</td><td class="num" id="hc-ccc">—</td><td class="num">≤ 90 days</td><td id="hc-cccs">—</td></tr>
+      <tr><td><b>Revenue Growth 收入增长</b></td><td class="muted" style="font-size:11px">与去年同期相比增长多少</td><td class="num" id="hc-rg">—</td><td class="num">≥ 10%</td><td id="hc-rgs">—</td></tr>
+      <tr><td><b>Equity 股东权益</b></td><td class="muted" style="font-size:11px">公司总资产减总负债</td><td class="num" id="hc-eq">—</td><td class="num">Positive 正数</td><td id="hc-eqs">—</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══════ PAGE 2: WORKING CAPITAL ══════ -->
+<div class="page" id="page-2">
+  <div class="explain">
+    <b>Working Capital 营运资金</b> — 钱在公司内循环的速度。<br>
+    <b>给老板的一句话：</b>你先垫钱买货，再等客户付款——这段时间越长，你需要垫的钱越多，资金压力越大。<br>
+    <b>CCC（现金转换周期）</b> = 应收天数 + 库存天数 − 应付天数。越低越好，理想 &lt; 90 天。
+  </div>
+
+  <div class="cards c3">
+    <div class="card card-a">
+      <div class="c-en">Receivable Days 应收天数</div><div class="c-title">How long customers take to pay</div>
+      <div class="c-val" id="wc-rec">—</div>
+      <div class="c-note">客户平均多少天后才付款给你</div>
+      <div class="c-impact"><b>后续影响：</b>应收天数过长 → 钱卡在客户手里 → 你需要更多借贷维持运营 → 财务成本上升。</div>
+    </div>
+    <div class="card card-a">
+      <div class="c-en">Inventory Days 库存天数</div><div class="c-title">How long stock sits unsold</div>
+      <div class="c-val" id="wc-inv">—</div>
+      <div class="c-note">货物平均在仓库待多少天才卖出</div>
+      <div class="c-impact"><b>后续影响：</b>库存积压 → 占用大量现金 → 货物风险（损坏/过期）→ 仓储成本增加。</div>
+    </div>
+    <div class="card card-g">
+      <div class="c-en">Payable Days 应付天数</div><div class="c-title">How long before you pay suppliers</div>
+      <div class="c-val" id="wc-pay">—</div>
+      <div class="c-note">你平均多少天后才付款给供应商</div>
+      <div class="c-impact"><b>建议：</b>应付天数越长对你越有利，但要维持与供应商的良好关系，目标 60-90 天。</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Cash Conversion Cycle (CCC) 现金转换周期</div>
+    <div class="ccc-formula">
+      <div class="ccc-box"><div class="ccc-days amber" id="ccc-r">—</div><div class="ccc-lbl">Recv Days 应收</div></div>
+      <div class="ccc-op">+</div>
+      <div class="ccc-box"><div class="ccc-days amber" id="ccc-i">—</div><div class="ccc-lbl">Inv Days 库存</div></div>
+      <div class="ccc-op">−</div>
+      <div class="ccc-box"><div class="ccc-days green" id="ccc-p">—</div><div class="ccc-lbl">Pay Days 应付</div></div>
+      <div class="ccc-op">=</div>
+      <div class="ccc-result"><div class="ccc-days" id="ccc-t">—</div><div class="ccc-lbl">CCC Days 天</div></div>
+    </div>
+    <svg id="svg-ccc" width="100%" height="130" viewBox="0 0 500 130"></svg>
+    <div class="impact-box">
+      <div class="impact-title">⚡ 后续影响 — What High CCC Means</div>
+      <div class="impact-row"><span class="impact-icon">📌</span><span>CCC 超过 150 天 → 每RM100万营业额需垫付约RM41万运营资金</span></div>
+      <div class="impact-row"><span class="impact-icon">📌</span><span>资金长期被占用 → 无法把握扩张或新客户机会</span></div>
+      <div class="impact-row"><span class="impact-icon">📌</span><span>只能靠透支/贷款填补 → 财务成本持续上升</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">💰 Potential Cash Release 潜在可释放现金</div>
+    <div class="explain" style="margin-bottom:12px">如果把以下指标改善到行业标准，可以释放的现金。这些钱<b>已经在公司里</b>——只是被锁住了。</div>
+    <table>
+      <tr><th>Action 行动</th><th>Current 现状</th><th>Target 目标</th><th>Cash Released 可释放现金</th></tr>
+      <tr><td>Collect faster 加快收款</td><td class="num" id="pot-rc">—</td><td class="num">60 days</td><td class="num green" id="pot-rv">—</td></tr>
+      <tr><td>Reduce inventory 减少库存</td><td class="num" id="pot-ic">—</td><td class="num">90 days</td><td class="num green" id="pot-iv">—</td></tr>
+      <tr><td>Extend payables 延长付款期</td><td class="num" id="pot-pc">—</td><td class="num">90 days</td><td class="num green" id="pot-pv">—</td></tr>
+      <tr><td>Improve gross margin 提升毛利率</td><td class="num" id="pot-gc">—</td><td class="num">22%</td><td class="num green" id="pot-gv">—</td></tr>
+      <tr class="tr-total"><td>Total Potential 合计潜力</td><td></td><td></td><td class="num green" id="pot-tot">—</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══════ PAGE 3: P&L ══════ -->
+<div class="page" id="page-3">
+  <div class="explain">
+    <b>P&L 损益表</b> — 公司怎么赚钱（或亏钱）的完整记录。<br>
+    <b>给老板的一句话：</b>营业额大不代表赚钱——要看扣完所有成本后，净利润是正还是负。净利润为负 = 越努力做生意，亏得越多。
+  </div>
+  <div class="two-col">
+    <div class="section">
+      <div class="sec-title">P&amp;L Statement 损益表 <span class="sec-subtitle">本年 vs 去年</span></div>
+      <table>
+        <tr><th>Item 项目</th><th>This Year 本年</th><th>Last Year 去年</th><th>Change</th></tr>
+        <tr><td>Revenue 营业额</td><td class="num" id="pl-r">—</td><td class="num" id="pl-pr">—</td><td class="num" id="pl-rg">—</td></tr>
+        <tr><td>COGS 货物成本</td><td class="num" id="pl-c">—</td><td class="num" id="pl-pc">—</td><td class="num" id="pl-cg">—</td></tr>
+        <tr style="font-weight:600"><td>Gross Profit 毛利</td><td class="num" id="pl-g">—</td><td class="num" id="pl-pg">—</td><td class="num" id="pl-gg">—</td></tr>
+        <tr><td>Admin Expenses 行政费</td><td class="num" id="pl-a">—</td><td class="num" id="pl-pa">—</td><td class="num" id="pl-ag">—</td></tr>
+        <tr><td>Finance Costs 财务费用</td><td class="num" id="pl-f">—</td><td class="num" id="pl-pf">—</td><td class="num" id="pl-fg">—</td></tr>
+        <tr class="tr-total"><td>Net Profit 净利润</td><td class="num" id="pl-n">—</td><td class="num" id="pl-pn">—</td><td class="num" id="pl-ng">—</td></tr>
+      </table>
+      <div class="impact-box" style="margin-top:14px">
+        <div class="impact-title">⚡ 后续影响</div>
+        <div class="impact-row"><span class="impact-icon">📌</span><span>净利润持续为负 → 股东权益每年减少 → 最终资不抵债</span></div>
+        <div class="impact-row"><span class="impact-icon">📌</span><span>行政费用增长快于营业额 → 规模越大亏得越多</span></div>
+        <div class="impact-row"><span class="impact-icon">📌</span><span>财务成本高企 → 利润被债务利息蚕食</span></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-title">Margin Comparison 利润率对比</div>
+      <svg id="svg-pl" width="100%" height="220" viewBox="0 0 280 220"></svg>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-title">Year-on-Year Growth 同比增长率</div>
+    <svg id="svg-growth" width="100%" height="140" viewBox="0 0 500 140"></svg>
+  </div>
+</div>
+
+<!-- ══════ PAGE 4: DEBT ══════ -->
+<div class="page" id="page-4">
+  <div class="explain">
+    <b>Debt Structure 债务结构</b> — 公司目前欠多少钱、欠谁的。<br>
+    <b>给老板的一句话：</b>短期债务（1年内要还）最危险，因为若到期无法偿还，银行可能追债。透支利率最贵，要优先处理。
+  </div>
+  <div class="two-col" style="align-items:start">
+    <div class="section">
+      <div class="sec-title">Debt Breakdown 债务明细</div>
+      <table>
+        <tr><th>Type 类型</th><th>Amount 金额</th><th>占比</th><th>Risk 风险</th></tr>
+        <tr><td>Long-term Loans 长期贷款</td><td class="num" id="d-ltl">—</td><td class="num" id="d-ltlp">—</td><td class="muted" style="font-size:11px">多年还清，压力较低</td></tr>
+        <tr><td>Short-term Loans 短期贷款</td><td class="num" id="d-stl">—</td><td class="num" id="d-stlp">—</td><td class="amber" style="font-size:11px">⚠ 1年内到期</td></tr>
+        <tr><td>Directors Loan 董事贷款</td><td class="num" id="d-dir">—</td><td class="num" id="d-dirp">—</td><td class="muted" style="font-size:11px">欠董事，较灵活</td></tr>
+        <tr><td>Lease Liabilities 租赁负债</td><td class="num" id="d-lea">—</td><td class="num" id="d-leap">—</td><td class="muted" style="font-size:11px">固定资产租赁</td></tr>
+        <tr><td>Bank Overdraft 银行透支</td><td class="num" id="d-od">—</td><td class="num" id="d-odp">—</td><td class="red" style="font-size:11px">🔴 利率最高，优先处理</td></tr>
+        <tr class="tr-total"><td>Total 总债务</td><td class="num" id="d-tot">—</td><td class="num">100%</td><td></td></tr>
+      </table>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="display:flex;gap:24px">
+          <div><div style="font-size:11px;color:var(--muted)">Equity 股东权益</div><div style="font-size:20px;font-weight:700;margin-top:4px" id="d-eq">—</div></div>
+          <div><div style="font-size:11px;color:var(--muted)">Debt/Equity Ratio</div><div style="font-size:20px;font-weight:700;margin-top:4px" id="d-der">—</div></div>
+        </div>
+      </div>
+      <div class="impact-box" style="margin-top:14px">
+        <div class="impact-title">⚡ 后续影响</div>
+        <div class="impact-row"><span class="impact-icon">📌</span><span>短期贷款到期无法展期 → 被迫变卖资产偿债</span></div>
+        <div class="impact-row"><span class="impact-icon">📌</span><span>D/E ratio 过高 → 银行拒绝新贷款申请</span></div>
+        <div class="impact-row"><span class="impact-icon">📌</span><span>透支不处理 → 每年利息成本拖垮净利润</span></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-title">Debt Donut 债务结构图</div>
+      <svg id="svg-debt" width="190" height="190" viewBox="0 0 190 190"></svg>
+      <div id="d-legend" style="margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PAGE 5: ACTIONS ══════ -->
+<div class="page" id="page-5">
+  <div class="explain">
+    <b>Action Plan 行动计划</b> — 根据你的数字，以下是优先改善现金流的步骤。<b>按顺序执行</b>，最紧急的排在前面。
+  </div>
+  <div class="cards c4" style="margin-bottom:18px">
+    <div class="card card-g"><div class="c-en">Collect Faster 加快收款</div><div class="c-val green" id="as-rec">—</div><div class="c-note">可释放现金</div></div>
+    <div class="card card-g"><div class="c-en">Reduce Inventory 减少库存</div><div class="c-val green" id="as-inv">—</div><div class="c-note">可释放现金</div></div>
+    <div class="card card-g"><div class="c-en">Extend Payables 延长付款</div><div class="c-val green" id="as-pay">—</div><div class="c-note">可释放现金</div></div>
+    <div class="card card-g"><div class="c-en">Total Potential 合计潜力</div><div class="c-val green" id="as-tot">—</div><div class="c-note">这些钱已在公司里</div></div>
+  </div>
+  <div class="section">
+    <div class="sec-title">Step-by-Step Plan 分步行动计划</div>
+    <div id="action-plan"></div>
+  </div>
+</div>
+
+<!-- ══════ PAGE 6: LIVE INPUT ══════ -->
+<div class="page" id="page-6">
+  <div class="explain">
+    <b>Live Input 实时输入</b> — 输入任何公司的数字，所有分析和图表<b>即时自动更新</b>，无需按提交。<br>
+    换一个客户？直接改数字，整个 dashboard 跟着变。
+  </div>
+  <div class="section">
+    <div class="sec-title">Company Info 公司信息</div>
+    <div class="form-grid">
+      <div class="fg"><label>Company Name 公司名称</label><input type="text" data-k="company" placeholder="ABC Company"></div>
+      <div class="fg"><label>Reporting Period 报告期间</label><input type="text" data-k="period" placeholder="FY 2026"></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-title">Balance Sheet 资产负债表</div>
+    <div class="form-grid">
+      <div class="form-sec">Assets 资产</div>
+      <div class="fg"><label>Cash &amp; Bank 现金及银行 (RM)</label><input type="number" data-k="cash"></div>
+      <div class="fg"><label>Bank Overdraft 银行透支 (RM)</label><input type="number" data-k="overdraft"></div>
+      <div class="fg"><label>Receivables 应收账款 (RM)</label><input type="number" data-k="rec"></div>
+      <div class="fg"><label>Inventory 库存 (RM)</label><input type="number" data-k="inv"></div>
+      <div class="form-sec">Liabilities &amp; Equity 负债与权益</div>
+      <div class="fg"><label>Payables 应付账款 (RM)</label><input type="number" data-k="pay"></div>
+      <div class="fg"><label>Equity 股东权益 (RM)</label><input type="number" data-k="equity"></div>
+      <div class="fg"><label>Long-term Loans 长期贷款 (RM)</label><input type="number" data-k="ltl"></div>
+      <div class="fg"><label>Short-term Loans 短期贷款 (RM)</label><input type="number" data-k="stl"></div>
+      <div class="fg"><label>Directors Loan 董事贷款 (RM)</label><input type="number" data-k="dir"></div>
+      <div class="fg"><label>Lease Liabilities 租赁负债 (RM)</label><input type="number" data-k="lease"></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-title">Income Statement — This Year 本年损益</div>
+    <div class="form-grid">
+      <div class="fg"><label>Revenue 营业额 (RM)</label><input type="number" data-k="rev"></div>
+      <div class="fg"><label>Cost of Goods Sold 货物成本 (RM)</label><input type="number" data-k="cogs"></div>
+      <div class="fg"><label>Admin Expenses 行政费用 (RM)</label><input type="number" data-k="adm"></div>
+      <div class="fg"><label>Finance Costs 财务费用 (RM)</label><input type="number" data-k="fin"></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-title">Prior Year Comparison 去年对比 <span class="sec-subtitle">(Optional — for growth analysis)</span></div>
+    <div class="form-grid">
+      <div class="fg"><label>Prior Revenue 去年营业额 (RM)</label><input type="number" data-k="py_rev"></div>
+      <div class="fg"><label>Prior COGS 去年货物成本 (RM)</label><input type="number" data-k="py_cogs"></div>
+      <div class="fg"><label>Prior Admin 去年行政费 (RM)</label><input type="number" data-k="py_adm"></div>
+      <div class="fg"><label>Prior Finance 去年财务费 (RM)</label><input type="number" data-k="py_fin"></div>
+      <div class="fg"><label>Prior Receivables 去年应收 (RM)</label><input type="number" data-k="py_rec"></div>
+      <div class="fg"><label>Prior Inventory 去年库存 (RM)</label><input type="number" data-k="py_inv"></div>
+    </div>
+  </div>
+  <button class="btn-reset" onclick="resetDemo()">Reset to ABC Company Demo 还原示例数据</button>
+</div>
+
+<script>
+var S = {
+  company:'ABC Company', period:'MA 2026 (until 31/03/2026)',
+  cash:7396, overdraft:418107, rec:2313377, inv:3450343, pay:1487558,
+  equity:-507951, ltl:7896142, stl:2140831, dir:3321512, lease:259422,
+  rev:8368166, cogs:6828884, adm:1793264, fin:423271,
+  py_rev:6864944, py_cogs:5329623, py_adm:1657022, py_fin:423271,
+  py_rec:1540390, py_inv:4612048
+};
+var DEMO = JSON.parse(JSON.stringify(S));
+
+function N(v){return Number(v)||0;}
+function K(v){
+  var a=Math.abs(v);
+  if(a>=1000000) return 'RM '+(v/1000000).toFixed(1)+'M';
+  if(a>=1000) return 'RM '+(v/1000).toFixed(0)+'K';
+  return 'RM '+Math.round(v).toLocaleString();
+}
+function P(v){return (v*100).toFixed(1)+'%';}
+function D(v){return Math.round(v)+' days';}
+function cc(v,pos){
+  if(pos===undefined)pos=true;
+  return pos?(v>0?'green':v<0?'red':'amber'):(v<0?'green':v>0?'red':'amber');
+}
+function bd(t,c){return '<span class="badge badge-'+c+'">'+t+'</span>';}
+
+function calc(){
+  var s=S;
+  var nc=N(s.cash)-N(s.overdraft);
+  var gp=N(s.rev)-N(s.cogs);
+  var gm=s.rev>0?gp/N(s.rev):0;
+  var net=gp-N(s.adm)-N(s.fin);
+  var nm=s.rev>0?net/N(s.rev):0;
+  var burn=net/12;
+  var pygp=N(s.py_rev)-N(s.py_cogs);
+  var pygm=s.py_rev>0?pygp/N(s.py_rev):0;
+  var pynet=pygp-N(s.py_adm)-N(s.py_fin);
+  var rD=s.rev>0?N(s.rec)/(N(s.rev)/365):0;
+  var iD=s.cogs>0?N(s.inv)/(N(s.cogs)/365):0;
+  var pD=s.cogs>0?N(s.pay)/(N(s.cogs)/365):0;
+  var ccc=rD+iD-pD;
+  var rG=s.py_rev>0?(N(s.rev)-N(s.py_rev))/N(s.py_rev):0;
+  var cG=s.py_cogs>0?(N(s.cogs)-N(s.py_cogs))/N(s.py_cogs):0;
+  var aG=s.py_adm>0?(N(s.adm)-N(s.py_adm))/N(s.py_adm):0;
+  var fG=s.py_fin>0?(N(s.fin)-N(s.py_fin))/N(s.py_fin):0;
+  var gG=pygp>0?(gp-pygp)/pygp:0;
+  var rPot=Math.max(0,(rD-60)*N(s.rev)/365);
+  var iPot=Math.max(0,(iD-90)*N(s.cogs)/365);
+  var pPot=Math.max(0,(90-pD)*N(s.cogs)/365);
+  var gPot=Math.max(0,(0.22-gm)*N(s.rev));
+  var td=N(s.ltl)+N(s.stl)+N(s.dir)+N(s.lease)+N(s.overdraft);
+  return {nc:nc,gp:gp,gm:gm,net:net,nm:nm,burn:burn,
+          pygp:pygp,pygm:pygm,pynet:pynet,
+          rD:rD,iD:iD,pD:pD,ccc:ccc,
+          rG:rG,cG:cG,aG:aG,fG:fG,gG:gG,
+          rPot:rPot,iPot:iPot,pPot:pPot,gPot:gPot,
+          tot:rPot+iPot+pPot+gPot,td:td};
+}
+
+function el(id){return document.getElementById(id);}
+function set(id,html,cls){
+  var e=el(id); if(!e) return;
+  e.innerHTML=html;
+  if(cls){
+    ['red','amber','green','blue','gold','muted'].forEach(function(c){e.classList.remove(c);});
+    e.classList.add(cls);
+  }
+}
+
+function render(){
+  var s=S, r=calc();
+  set('hdr-co', s.company||'—');
+  set('hdr-per', s.period||'—');
+
+  // ── URGENT ──
+  var ncC=r.nc<0?'red':r.nc<50000?'amber':'green';
+  var burnC=r.burn<0?'red':'green';
+  if(r.nc<0){
+    set('u-main','Net Cash Negative: '+K(r.nc));
+    set('u-sub','Company is operating on borrowed money. The overdraft must be addressed immediately before the bank acts first.');
+  } else if(r.burn<0){
+    set('u-main','Monthly Loss: '+K(r.burn));
+    set('u-sub','Company is losing money every month. Revenue is not covering total costs.');
+  } else {
+    set('u-main','Monitoring Required');
+    set('u-sub','Cash position is stable but key metrics still need attention.');
+  }
+  set('u-nc',K(r.nc),ncC);
+  set('u-burn',K(r.burn),burnC);
+  set('u-eq',K(N(s.equity)),N(s.equity)>=0?'green':'red');
+  set('u-gm',P(r.gm),r.gm>=0.25?'green':r.gm>=0.15?'amber':'red');
+  set('sc-burn-lbl',K(r.burn));
+
+  var s3=r.nc+r.burn*3, s6=r.nc+r.burn*6, s12=r.nc+r.burn*12;
+  set('sc3',K(s3),s3>=0?'green':'red');
+  set('sc3s',s3>=0?bd('Stable','g'):bd('Critical','r'));
+  set('sc6',K(s6),s6>=0?'green':'red');
+  set('sc6s',s6>=0?bd('Stable','g'):bd('Critical','r'));
+  set('sc12',K(s12),s12>=0?'green':'red');
+  set('sc12s',s12>=0?bd('Stable','g'):s12>-500000?bd('Warning','a'):bd('Critical','r'));
+
+  var acts=[];
+  if(r.nc<0) acts.push(['Renegotiate bank overdraft','今天约见银行经理，将透支转为利率较低的定期贷款。目标：6个月内消除透支额度。']);
+  if(r.rD>60) acts.push(['Chase top 5 overdue debtors this week','应收天数 '+D(r.rD)+'，超标 '+(Math.round(r.rD-60))+' 天。每追回1天应收，可释放 '+K(N(s.rev)/365)+' 现金。']);
+  if(r.iD>90) acts.push(['Stop new stock purchases immediately','库存天数 '+D(r.iD)+'，积压 '+K(r.iPot)+'。暂停进货，先清现有库存，尤其是滞销品。']);
+  if(r.gm<0.20) acts.push(['Review pricing urgently','毛利率仅 '+P(r.gm)+'，低于安全线20%。检讨定价策略，淘汰低毛利产品。']);
+  if(acts.length===0) acts.push(['Maintain momentum','各项指标处于健康范围。专注收入增长，每月监控关键指标。']);
+  var ahtml='';
+  for(var i=0;i<Math.min(acts.length,3);i++){
+    ahtml+='<div class="act-item"><div class="act-num">'+(i+1)+'</div><div class="act-body"><b>'+acts[i][0]+'</b><span>'+acts[i][1]+'</span></div></div>';
+  }
+  el('urg-actions').innerHTML=ahtml;
+
+  // ── OVERVIEW ──
+  set('ov-rev',K(N(s.rev)),'blue');
+  set('ov-revg',s.py_rev>0?('YoY: '+P(r.rG)):' ');
+  set('ov-gp',K(r.gp),r.gp>0?'green':'red');
+  set('ov-gm','Margin: '+P(r.gm),r.gm>=0.25?'green':r.gm>=0.15?'amber':'red');
+  set('ov-net',K(r.net),r.net>=0?'green':'red');
+  set('ov-nc',K(r.nc),r.nc>=0?'green':'red');
+
+  set('hc-gm',P(r.gm)); set('hc-gms',r.gm>=0.25?bd('Good','g'):r.gm>=0.15?bd('Watch','a'):bd('Low','r'));
+  set('hc-nm',P(r.nm)); set('hc-nms',r.nm>=0.05?bd('Good','g'):r.nm>=0?bd('Watch','a'):bd('Loss','r'));
+  set('hc-ccc',D(r.ccc)); set('hc-cccs',r.ccc<=90?bd('Good','g'):r.ccc<=180?bd('Watch','a'):bd('High','r'));
+  set('hc-rg',s.py_rev>0?P(r.rG):'N/A'); set('hc-rgs',r.rG>=0.10?bd('Good','g'):r.rG>=0?bd('Flat','a'):bd('Down','r'));
+  set('hc-eq',K(N(s.equity))); set('hc-eqs',N(s.equity)>=0?bd('Good','g'):bd('Negative','r'));
+
+  // ── WORKING CAPITAL ──
+  set('wc-rec',D(r.rD),r.rD<=60?'green':r.rD<=90?'amber':'red');
+  set('wc-inv',D(r.iD),r.iD<=90?'green':r.iD<=150?'amber':'red');
+  set('wc-pay',D(r.pD),r.pD>=60?'green':r.pD>=30?'amber':'red');
+  set('ccc-r',Math.round(r.rD),r.rD<=60?'green':'amber');
+  set('ccc-i',Math.round(r.iD),r.iD<=90?'green':'amber');
+  set('ccc-p',Math.round(r.pD),r.pD>=60?'green':'amber');
+  set('ccc-t',D(r.ccc),r.ccc<=90?'green':r.ccc<=150?'amber':'red');
+  set('pot-rc',D(r.rD)); set('pot-rv',r.rPot>0?K(r.rPot):'✓ On target','green');
+  set('pot-ic',D(r.iD)); set('pot-iv',r.iPot>0?K(r.iPot):'✓ On target','green');
+  set('pot-pc',D(r.pD)); set('pot-pv',r.pPot>0?K(r.pPot):'✓ On target','green');
+  set('pot-gc',P(r.gm)); set('pot-gv',r.gPot>0?K(r.gPot):'✓ On target','green');
+  set('pot-tot',K(r.tot),'green');
+
+  // ── P&L ──
+  set('pl-r',K(N(s.rev))); set('pl-pr',K(N(s.py_rev))); set('pl-rg',s.py_rev?P(r.rG):'—',r.rG>=0?'green':'red');
+  set('pl-c',K(N(s.cogs))); set('pl-pc',K(N(s.py_cogs))); set('pl-cg',s.py_cogs?P(r.cG):'—',r.cG<=0?'green':'red');
+  set('pl-g',K(r.gp)); set('pl-pg',K(r.pygp)); set('pl-gg',r.pygp?P(r.gG):'—',r.gG>=0?'green':'red');
+  set('pl-a',K(N(s.adm))); set('pl-pa',K(N(s.py_adm))); set('pl-ag',s.py_adm?P(r.aG):'—',r.aG<=0?'green':'red');
+  set('pl-f',K(N(s.fin))); set('pl-pf',K(N(s.py_fin))); set('pl-fg',s.py_fin?P(r.fG):'—',r.fG<=0?'green':'red');
+  set('pl-n',K(r.net),r.net>=0?'green':'red'); set('pl-pn',K(r.pynet),r.pynet>=0?'green':'red');
+  var ng=r.pynet!==0?(r.net-r.pynet)/Math.abs(r.pynet):0;
+  set('pl-ng',r.pynet!==0?P(ng):'—',ng>=0?'green':'red');
+
+  // ── DEBT ──
+  var td=r.td||1;
+  set('d-ltl',K(N(s.ltl))); set('d-ltlp',P(N(s.ltl)/td));
+  set('d-stl',K(N(s.stl))); set('d-stlp',P(N(s.stl)/td));
+  set('d-dir',K(N(s.dir))); set('d-dirp',P(N(s.dir)/td));
+  set('d-lea',K(N(s.lease))); set('d-leap',P(N(s.lease)/td));
+  set('d-od',K(N(s.overdraft))); set('d-odp',P(N(s.overdraft)/td));
+  set('d-tot',K(r.td));
+  set('d-eq',K(N(s.equity)),N(s.equity)>=0?'green':'red');
+  var der=N(s.equity)!==0?r.td/Math.abs(N(s.equity)):999;
+  set('d-der',N(s.equity)>0?der.toFixed(1)+'x':'N/A',N(s.equity)>0&&der<=3?'green':N(s.equity)>0&&der<=6?'amber':'red');
+
+  // ── ACTIONS ──
+  set('as-rec',r.rPot>0?K(r.rPot):'On target','green');
+  set('as-inv',r.iPot>0?K(r.iPot):'On target','green');
+  set('as-pay',r.pPot>0?K(r.pPot):'On target','green');
+  set('as-tot',K(r.tot),'green');
+
+  var plan=''; var step=1;
+  var items=[
+    [r.nc<0, 'Renegotiate bank overdraft / convert to term loan', 'Net cash is '+K(r.nc)+'. Contact your bank this week to convert the overdraft into a lower-rate term loan. This reduces monthly interest cost and removes the risk of sudden overdraft cancellation.<br><span class="muted">净现金负数。本周联系银行，将透支转为利率较低的定期贷款，降低利息开销并消除被银行突然取消额度的风险。</span>'],
+    [r.rD>60, 'Accelerate receivables collection', 'Receivable days: '+D(r.rD)+'. Reducing to 60 days releases <b>'+K(r.rPot)+'</b>. Implement 7/14/30-day follow-up protocol. Assign one person responsible for collections.<br><span class="muted">应收天数 '+D(r.rD)+'。缩短至60天可释放 '+K(r.rPot)+'。建立7/14/30天催款流程，指定专人负责收款。</span>'],
+    [r.iD>90, 'Reduce inventory to 90 days', 'Inventory days: '+D(r.iD)+'. Holding '+K(r.iPot)+' in excess stock. Pause new orders, run promotions on slow-moving items, consider consignment return with suppliers.<br><span class="muted">库存天数 '+D(r.iD)+'。积压 '+K(r.iPot)+' 闲置库存。暂停进货，促销滞销品，与供应商商议退货安排。</span>'],
+    [r.gm<0.22, 'Improve gross margin to 22%', 'Current margin '+P(r.gm)+' (target 22%). Potential: <b>'+K(r.gPot)+'</b>. Review pricing on top 10 products, renegotiate supplier costs, discontinue loss-making SKUs.<br><span class="muted">当前毛利率 '+P(r.gm)+'。检讨前10大产品定价，重新谈判采购成本，淘汰亏损产品。</span>'],
+    [r.net<0, 'Cut admin expenses', 'Monthly loss: '+K(r.burn)+'. Review all expenses above RM5,000 for necessity. Target 10-15% admin cost reduction within 90 days.<br><span class="muted">每月亏损 '+K(r.burn)+'。检讨所有超过RM5,000的开销项目，目标90天内削减10-15%行政费用。</span>']
+  ];
+  for(var i=0;i<items.length;i++){
+    if(items[i][0]){
+      plan+='<div class="act-item"><div class="act-num">'+step+'</div><div class="act-body"><b>'+items[i][1]+'</b><span>'+items[i][2]+'</span></div></div>';
+      step++;
+    }
+  }
+  if(plan==='') plan='<div class="act-item"><div class="act-num">1</div><div class="act-body"><b>Maintain current trajectory</b><span>Key metrics are within healthy ranges. Focus on revenue growth and maintaining margins above 25%. Set up monthly financial review cadence.</span></div></div>';
+  el('action-plan').innerHTML=plan;
+
+  renderCharts();
+}
+
+// ── CHARTS ──
+function svgBar(id, labels, datasets){
+  var e=el(id); if(!e) return;
+  var W=320,H=190,pt=14,pr=10,pb=36,pl=54;
+  var cw=W-pl-pr, ch=H-pt-pb;
+  var all=[];
+  for(var d=0;d<datasets.length;d++) for(var v=0;v<datasets[d].data.length;v++) all.push(datasets[d].data[v]);
+  var mn=Math.min(0,Math.min.apply(null,all)), mx=Math.max.apply(null,all)||1;
+  var rng=mx-mn||1;
+  var ng=labels.length, nd=datasets.length;
+  var gw=cw/ng, bw=Math.min(gw*0.7/nd,30), gap=3;
+  function vy(v){return pt+ch-((v-mn)/rng)*ch;}
+  var s='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'">';
+  for(var i=0;i<=4;i++){
+    var v=mn+rng*i/4, y=vy(v);
+    s+='<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="#004040" stroke-width="1"/>';
+    var t=Math.abs(v)>=1e6?(v/1e6).toFixed(1)+'M':Math.abs(v)>=1000?(v/1000).toFixed(0)+'K':Math.round(v)+'';
+    s+='<text x="'+(pl-4)+'" y="'+(y+4)+'" text-anchor="end" font-size="9" fill="#9a9080">'+t+'</text>';
+  }
+  var zy=vy(0);
+  s+='<line x1="'+pl+'" y1="'+zy+'" x2="'+(W-pr)+'" y2="'+zy+'" stroke="#006060" stroke-width="2"/>';
+  for(var g=0;g<ng;g++){
+    var cx=pl+g*gw+gw/2;
+    var sx=cx-((nd*bw+(nd-1)*gap)/2);
+    for(var d2=0;d2<nd;d2++){
+      var v2=datasets[d2].data[g]||0;
+      var x=sx+d2*(bw+gap);
+      var y0=vy(0),y1=vy(v2);
+      var bh=Math.abs(y0-y1)||1, by=Math.min(y0,y1);
+      s+='<rect x="'+x+'" y="'+by+'" width="'+bw+'" height="'+bh+'" fill="'+(datasets[d2].color||'#4dbf91')+'" rx="2"/>';
+    }
+    s+='<text x="'+cx+'" y="'+(H-pb+14)+'" text-anchor="middle" font-size="9" fill="#9a9080">'+labels[g]+'</text>';
+  }
+  s+='</svg>';
+  e.outerHTML=s;
+}
+
+function svgPctBar(id, labels, values, colors){
+  var e=el(id); if(!e) return;
+  var W=500,H=130,pt=10,pr=20,pb=30,pl=10;
+  var cw=W-pl-pr, ch=H-pt-pb;
+  var mn=Math.min(0,Math.min.apply(null,values)), mx=Math.max.apply(null,values)||0.01;
+  var rng=(mx-mn)||0.01;
+  var n=values.length, bw=Math.min(cw/n*0.6,60);
+  function vy(v){return pt+ch-((v-mn)/rng)*ch;}
+  var s='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'">';
+  var zy=vy(0);
+  s+='<line x1="'+pl+'" y1="'+zy+'" x2="'+(W-pr)+'" y2="'+zy+'" stroke="#006060" stroke-width="1.5"/>';
+  var step2=cw/n;
+  for(var i=0;i<n;i++){
+    var cx=pl+i*step2+step2/2;
+    var v=values[i], y0=vy(0), y1=vy(v), bh=Math.abs(y0-y1)||1, by=Math.min(y0,y1);
+    var col=colors&&colors[i]?colors[i]:(v>=0?'#4dbf91':'#e05c5c');
+    s+='<rect x="'+(cx-bw/2)+'" y="'+by+'" width="'+bw+'" height="'+bh+'" fill="'+col+'" rx="3"/>';
+    var vt=(v*100).toFixed(1)+'%', ty=v>=0?by-4:by+bh+12;
+    s+='<text x="'+cx+'" y="'+ty+'" text-anchor="middle" font-size="10" fill="'+col+'">'+vt+'</text>';
+    s+='<text x="'+cx+'" y="'+(H-pb+14)+'" text-anchor="middle" font-size="9" fill="#9a9080">'+labels[i]+'</text>';
+  }
+  s+='</svg>';
+  e.outerHTML=s;
+}
+
+function svgLine(id, labels, datasets){
+  var e=el(id); if(!e) return;
+  var W=320,H=190,pt=14,pr=10,pb=30,pl=40;
+  var cw=W-pl-pr, ch=H-pt-pb;
+  var all=[];
+  for(var d=0;d<datasets.length;d++) for(var v=0;v<datasets[d].data.length;v++) all.push(datasets[d].data[v]);
+  var mn=Math.min.apply(null,all), mx=Math.max.apply(null,all), rng=(mx-mn)||0.01;
+  var n=labels.length;
+  function px(i){return pl+i/(n-1||1)*cw;}
+  function py(v){return pt+ch-((v-mn)/rng)*ch;}
+  var s='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'">';
+  for(var i=0;i<=4;i++){
+    var v=mn+rng*i/4, y=py(v);
+    s+='<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="#004040" stroke-width="1"/>';
+    s+='<text x="'+(pl-4)+'" y="'+(y+4)+'" text-anchor="end" font-size="9" fill="#9a9080">'+P(v)+'</text>';
+  }
+  for(var d2=0;d2<datasets.length;d2++){
+    var pts=datasets[d2].data, path='';
+    for(var j=0;j<pts.length;j++) path+=(j?'L':'M')+px(j).toFixed(0)+','+py(pts[j]).toFixed(0);
+    s+='<path d="'+path+'" fill="none" stroke="'+(datasets[d2].color||'#4dbf91')+'" stroke-width="2.5"/>';
+    for(var j=0;j<pts.length;j++) s+='<circle cx="'+px(j)+'" cy="'+py(pts[j])+'" r="4" fill="'+(datasets[d2].color||'#4dbf91')+'"/>';
+    // legend dot
+    s+='<rect x="'+pl+'" y="'+(pt+(d2*14))+'" width="8" height="8" rx="2" fill="'+(datasets[d2].color||'#4dbf91')+'"/>';
+    s+='<text x="'+(pl+11)+'" y="'+(pt+(d2*14)+7)+'" font-size="9" fill="#9a9080">'+(datasets[d2].label||'')+'</text>';
+  }
+  for(var i=0;i<n;i++) s+='<text x="'+px(i)+'" y="'+(H-pb+14)+'" text-anchor="middle" font-size="9" fill="#9a9080">'+labels[i]+'</text>';
+  s+='</svg>';
+  e.outerHTML=s;
+}
+
+function svgDonut(id, vals, cols, lbls){
+  var e=el(id); if(!e) return;
+  var tot=vals.reduce(function(a,b){return a+b;},0)||1;
+  var cx=95,cy=95,r=78,ri=44;
+  var s='<svg width="190" height="190" viewBox="0 0 190 190">';
+  var a=-Math.PI/2;
+  for(var i=0;i<vals.length;i++){
+    if(vals[i]<=0) continue;
+    var sl=vals[i]/tot*Math.PI*2;
+    var x1=cx+Math.cos(a)*r, y1=cy+Math.sin(a)*r;
+    var x2=cx+Math.cos(a+sl)*r, y2=cy+Math.sin(a+sl)*r;
+    var xi1=cx+Math.cos(a)*ri, yi1=cy+Math.sin(a)*ri;
+    var xi2=cx+Math.cos(a+sl)*ri, yi2=cy+Math.sin(a+sl)*ri;
+    var lg=sl>Math.PI?1:0;
+    s+='<path d="M'+x1+','+y1+' A'+r+','+r+' 0 '+lg+',1 '+x2+','+y2+' L'+xi2+','+yi2+' A'+ri+','+ri+' 0 '+lg+',0 '+xi1+','+yi1+' Z" fill="'+(cols[i]||'#4dbf91')+'"/>';
+    a+=sl;
+  }
+  s+='</svg>';
+  e.outerHTML=s;
+  var leg=el('d-legend'); if(!leg) return;
+  var h='';
+  for(var i=0;i<lbls.length;i++){
+    h+='<div class="d-legend-item"><div class="d-dot" style="background:'+cols[i]+'"></div>'+lbls[i]+' ('+P(vals[i]/tot)+')</div>';
+  }
+  leg.innerHTML=h;
+}
+
+var currentTab=0;
+function renderCharts(){
+  var s=S, r=calc();
+  if(currentTab===1){
+    svgBar('svg-ov1',['Revenue','COGS','Gross P','Admin','Net P&L'],
+      [{data:[N(s.rev),N(s.cogs),r.gp,N(s.adm),r.net],color:'#5ca8e0'}]);
+    svgLine('svg-ov2',['PY Gross','PY Net','CY Gross','CY Net'],
+      [{data:[r.pygm,r.pynet>0?r.pynet/N(s.py_rev):r.pynet/(N(s.py_rev)||1),r.gm,r.nm],color:'#4dbf91',label:'Margin'}]);
+  }
+  if(currentTab===2){
+    svgBar('svg-ccc',['Recv Days','Inv Days','Pay Days'],
+      [{data:[r.rD,r.iD,r.pD],color:'#e0a95c'}]);
+  }
+  if(currentTab===3){
+    svgBar('svg-pl',['Rev','COGS','Gross P','Admin','Net'],
+      [{data:[N(s.py_rev),N(s.py_cogs),r.pygp,N(s.py_adm),r.pynet],color:'#5ca8e0'},
+       {data:[N(s.rev),N(s.cogs),r.gp,N(s.adm),r.net],color:'#4dbf91'}]);
+    svgPctBar('svg-growth',['Revenue','COGS','Gross P','Admin','Finance'],
+      [r.rG,r.cG,r.gG,r.aG,r.fG]);
+  }
+  if(currentTab===4){
+    var dv=[N(s.ltl),N(s.stl),N(s.dir),N(s.lease),N(s.overdraft)].map(function(v){return Math.max(0,v);});
+    svgDonut('svg-debt',dv,
+      ['#5ca8e0','#e0a95c','#b09b7b','#4dbf91','#e05c5c'],
+      ['LT Loans','ST Loans','Directors','Lease','Overdraft']);
+  }
+}
+
+function go(n){
+  currentTab=n;
+  document.querySelectorAll('.page').forEach(function(p,i){p.classList.toggle('active',i===n);});
+  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',i===n);});
+  renderCharts();
+}
+
+function resetDemo(){
+  S=JSON.parse(JSON.stringify(DEMO));
+  syncInputs();
+  render();
+}
+
+function syncInputs(){
+  document.querySelectorAll('[data-k]').forEach(function(inp){
+    var k=inp.getAttribute('data-k');
+    inp.value=S[k]!==undefined?S[k]:'';
+  });
+}
+
+document.querySelectorAll('[data-k]').forEach(function(inp){
+  inp.addEventListener('input',function(){
+    var k=inp.getAttribute('data-k');
+    S[k]=inp.type==='number'?(parseFloat(inp.value)||0):inp.value;
+    render();
+  });
+});
+
+syncInputs();
+render();
+</script>
+</body>
+</html>
