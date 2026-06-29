@@ -401,6 +401,13 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <div class="page" id="page-6">
+  <div class="section">
+    <div class="sec-hd">📁 Load Sample Data 加载示例数据</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <button class="btn" onclick="loadCompany('abc')" style="background:#5ca8e0;flex:1">Load ABC Company Demo</button>
+      <button class="btn" onclick="loadCompany('quick')" style="background:#b09b7b;flex:1">Load QUICK ED Solutions Demo</button>
+    </div>
+  </div>
   <div class="explain">
     <b>Live Input · 实时输入</b> — 输入任何公司的数字，所有分析和图表<b>即时自动更新</b>，无需按提交。换一个客户？直接改数字，整个 dashboard 跟着变。
   </div>
@@ -461,6 +468,36 @@ tr:last-child td{border-bottom:none}
   <button class="btn" onclick="resetDemo()">Reset to ABC Company Demo 还原示例数据</button>
 </div>
 <script>
+
+var COMPANIES = {
+  "abc": {
+    company:'ABC Company', period:'MA 2026',
+    cash:7396, od:418107, rec:2313377, inv:3450343, pay:1487558,
+    equity:-507951, ltl:7896142, stl:2140831, dir:3321512, lease:259422,
+    rev:8368166, cogs:6828884, adm:1793264, fin:423271,
+    cf_op:-261110, cf_inv:-188178, cf_fin:226344, py_nc:-310245,
+    py_rev:6864944, py_cogs:5329623, py_adm:1657022, py_fin:423271,
+    py_rec:1540390, py_inv:4612048, py_pay:1242871
+  },
+  "quick": {
+    company:'QUICK ED SOLUTIONS & SERVICES SDN BHD', period:'31 May 2026',
+    cash:437151.53, od:0, rec:46527.90, inv:0, pay:0,
+    equity:79900, ltl:0, stl:0, dir:0, lease:0,
+    rev:773109.83, cogs:436948.29, adm:178000, fin:446,
+    cf_op:0, cf_inv:0, cf_fin:0, py_nc:0,
+    py_rev:0, py_cogs:0, py_adm:0, py_fin:0,
+    py_rec:0, py_inv:0, py_pay:0
+  }
+};
+
+function loadCompany(key){
+  if(COMPANIES[key]){
+    S = JSON.parse(JSON.stringify(COMPANIES[key]));
+    syncInputs();
+    render();
+  }
+}
+
 var DEMO = {
   company:'ABC Company', period:'MA 2026 · As at 31/03/2026',
   cash:7396, od:418107, rec:2313377, inv:3450343, pay:1487558,
