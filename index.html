@@ -14,6 +14,8 @@
       --text: #e8e0d4;
       --muted: #9a9080;
       --border: #005050;
+      --success: #4dbf91;
+      --error: #e05c5c;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -66,6 +68,7 @@
       background: #001a20;
       cursor: pointer;
       margin-bottom: 20px;
+      transition: all 0.3s;
     }
     .upload-box:hover {
       border-color: var(--gold);
@@ -78,12 +81,91 @@
       padding: 15px;
       border-radius: 6px;
       display: none;
+      border: 1px solid;
     }
     .result.success {
       background: #001a0e;
-      border: 1px solid #4dbf91;
-      color: #4dbf91;
+      border-color: var(--success);
+      color: var(--success);
       display: block;
+    }
+    .result.error {
+      background: #1a0505;
+      border-color: var(--error);
+      color: var(--error);
+      display: block;
+    }
+    .file-list {
+      margin-top: 20px;
+    }
+    .file-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .file-item.success { border-left: 3px solid var(--success); }
+    .file-item.error { border-left: 3px solid var(--error); }
+
+    /* Dashboard styles */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+    .kpi-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--gold);
+    }
+    .data-table {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th {
+      background: #001820;
+      padding: 8px;
+      text-align: left;
+      color: var(--gold);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-state h3 {
+      color: var(--gold);
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -94,83 +176,129 @@
 </div>
 
 <div class="tabs">
-  <button class="tab active" onclick="showPage('upload')">📥 导入数据</button>
-  <button class="tab" onclick="showPage('dashboard')">📊 Executive Dashboard</button>
+  <button class="tab active" onclick="showPage('upload', this)">📥 导入数据</button>
+  <button class="tab" onclick="showPage('dashboard', this)">📊 数据分析</button>
 </div>
 
 <div class="container">
   <!-- UPLOAD PAGE -->
   <div id="upload" class="page active">
     <h2 style="color: var(--gold); margin-bottom: 20px;">📥 导入财务数据</h2>
-    
+
     <div class="upload-box" id="dropZone">
-      <p style="font-size: 18px; font-weight: bold;">拖放文件到此</p>
+      <p style="font-size: 18px; font-weight: bold;">📤 拖放文件到此</p>
       <p>或点击选择文件</p>
-      <p style="font-size: 12px; margin-top: 15px;">支持：Excel (.xlsx) | CSV (.csv) | PDF (.pdf)</p>
-      <input type="file" id="fileInput" onchange="handleFile(this.files[0])">
+      <p style="font-size: 12px; margin-top: 15px;">支持：Excel (.xlsx, .xls) | CSV (.csv) | PDF (.pdf)</p>
+      <input type="file" id="fileInput" onchange="handleFileInput(this)">
     </div>
-    
+
     <div class="result" id="result"></div>
+    <div class="file-list" id="fileList"></div>
   </div>
 
   <!-- DASHBOARD PAGE -->
   <div id="dashboard" class="page">
-    <h2 style="color: var(--gold); margin-bottom: 20px;">📊 Executive Dashboard</h2>
-    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 30px; text-align: center;">
-      <p style="color: var(--gold); font-size: 16px; margin-bottom: 15px;">Executive Diagnostic Dashboard</p>
-      <p style="color: var(--muted); margin-bottom: 15px;">7个分析标签页 | 多年数据对比 | 完整财务诊断</p>
-      <p style="color: var(--gold); font-weight: bold; margin: 20px 0;">本地使用完整版本</p>
-      <p style="font-size: 12px; color: var(--muted);">
-        运行: <code style="background: #001a20; padding: 5px 10px; border-radius: 4px;">ruby server.rb</code>
+    <h2 style="color: var(--gold); margin-bottom: 20px;">📊 数据分析</h2>
+    
+    <div id="dashboardEmpty" class="empty-state">
+      <h3>📊 数据分析</h3>
+      <p style="margin-bottom: 20px;">请在"导入数据"标签页上传 CSV 文件以查看分析结果</p>
+      <p style="font-size: 11px; color: var(--muted); line-height: 1.8;">
+        推荐格式: Date, Description, Amount, Type<br>
+        示例: 2026-06-27, Sales Revenue, 25000, in
       </p>
-      <p style="font-size: 12px; color: var(--muted); margin-top: 10px;">
-        打开: <code style="background: #001a20; padding: 5px 10px; border-radius: 4px;">http://localhost:3456/boss</code>
-      </p>
+    </div>
+
+    <div id="dashboardContent" style="display: none;">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="data-table">
+        <h3 style="color: var(--gold); margin-bottom: 15px;">📋 交易记录</h3>
+        <table id="dataTable">
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>描述</th>
+              <th>金额</th>
+              <th>类型</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-function showPage(pageName) {
+function showPage(pageName, buttonElement) {
+  // Hide all pages, show selected page
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById(pageName).classList.add('active');
-  
+  const pageEl = document.getElementById(pageName);
+  if (pageEl) {
+    pageEl.classList.add('active');
+  }
+
+  // Remove active from all tabs, add to clicked button
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
+  if (buttonElement) {
+    buttonElement.classList.add('active');
+  }
 }
 
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const result = document.getElementById('result');
+const fileList = document.getElementById('fileList');
 
-dropZone.addEventListener('click', () => fileInput.click());
+let uploadedFiles = [];
+let csvData = [];
+
+// Drag & drop handlers
+dropZone.addEventListener('click', () => {
+  fileInput.click();
+});
+
 dropZone.addEventListener('dragover', e => {
   e.preventDefault();
   dropZone.style.borderColor = '#b09b7b';
   dropZone.style.background = '#002a35';
 });
+
 dropZone.addEventListener('dragleave', () => {
   dropZone.style.borderColor = '#005050';
   dropZone.style.background = '#001a20';
 });
+
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.style.borderColor = '#005050';
   dropZone.style.background = '#001a20';
-  handleFile(e.dataTransfer.files[0]);
+
+  const files = e.dataTransfer.files;
+  for (let i = 0; i < files.length; i++) {
+    handleFile(files[i]);
+  }
 });
+
+function handleFileInput(input) {
+  if (input.files && input.files[0]) {
+    handleFile(input.files[0]);
+  }
+}
 
 function handleFile(file) {
   if (!file) return;
+
   const ext = file.name.split('.').pop().toLowerCase();
-  
+
   if (ext === 'xlsx' || ext === 'xls') {
     parseExcel(file);
   } else if (ext === 'csv') {
     parseCSV(file);
+  } else if (ext === 'pdf') {
+    addFileToList(file, 'success', '✅ PDF 已上传');
   } else {
-    result.className = 'result success';
-    result.innerHTML = '✅ 文件 ' + file.name + ' 已上传！';
+    addFileToList(file, 'success', '✅ 文件已上传');
   }
 }
 
@@ -182,10 +310,10 @@ function parseExcel(file) {
       const workbook = XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet);
-      result.className = 'result success';
-      result.innerHTML = '✅ ' + file.name + ' 解析成功！' + json.length + ' 行数据';
+      const msg = json.length + ' 行数据';
+      addFileToList(file, 'success', '✅ ' + msg);
     } catch (err) {
-      showError('解析失败');
+      addFileToList(file, 'error', '❌ 解析失败: ' + err.message);
     }
   };
   reader.readAsArrayBuffer(file);
@@ -194,24 +322,125 @@ function parseExcel(file) {
 function parseCSV(file) {
   const reader = new FileReader();
   reader.onload = e => {
-    Papa.parse(e.target.result, {
-      header: true,
-      complete: results => {
-        result.className = 'result success';
-        result.innerHTML = '✅ ' + file.name + ' 解析成功！' + results.data.length + ' 行数据';
-      }
-    });
+    try {
+      Papa.parse(e.target.result, {
+        header: true,
+        dynamicTyping: true,
+        complete: results => {
+          csvData = results.data.filter(row => row.Date || row.date || row.DATE);
+          const msg = csvData.length + ' 行数据';
+          addFileToList(file, 'success', '✅ ' + msg);
+          updateDashboard();
+        },
+        error: err => {
+          addFileToList(file, 'error', '❌ 解析失败');
+        }
+      });
+    } catch (err) {
+      addFileToList(file, 'error', '❌ 解析失败');
+    }
   };
   reader.readAsText(file);
 }
 
-function showError(msg) {
-  result.textContent = '❌ ' + msg;
-  result.className = 'result';
-  result.style.background = '#1a0505';
-  result.style.borderColor = '#e05c5c';
-  result.style.color = '#e05c5c';
-  result.style.display = 'block';
+function addFileToList(file, status, message) {
+  const fileItem = document.createElement('div');
+  fileItem.className = 'file-item ' + status;
+  fileItem.innerHTML = '<strong>' + file.name + '</strong> (' + formatFileSize(file.size) + ')<br><small>' + message + '</small>';
+  fileList.appendChild(fileItem);
+
+  uploadedFiles.push({ name: file.name, size: file.size, status: status });
+
+  // Show overall result
+  if (uploadedFiles.length > 0) {
+    const successCount = uploadedFiles.filter(f => f.status === 'success').length;
+    result.className = 'result success';
+    result.innerHTML = '✅ 已处理 ' + uploadedFiles.length + ' 个文件 (' + successCount + ' 个成功)';
+  }
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+function updateDashboard() {
+  if (csvData.length === 0) return;
+
+  const dashboardEmpty = document.getElementById('dashboardEmpty');
+  const dashboardContent = document.getElementById('dashboardContent');
+
+  // Calculate KPIs
+  let totalIncome = 0, totalExpense = 0, currentBalance = 0;
+  const transactions = [];
+
+  csvData.forEach(row => {
+    const dateVal = row.Date || row.date || row.DATE || '';
+    const desc = row.Description || row.description || row.Desc || '';
+    const amount = parseFloat(row.Amount || row.amount || 0);
+    const type = (row.Type || row.type || '').toLowerCase();
+
+    if (dateVal && amount) {
+      const isIncome = type === 'in' || type === 'income' || type === '收入';
+      
+      if (isIncome) {
+        totalIncome += amount;
+        currentBalance += amount;
+      } else {
+        totalExpense += amount;
+        currentBalance -= amount;
+      }
+
+      transactions.push({
+        date: dateVal,
+        description: desc || 'Transaction',
+        amount: amount,
+        type: isIncome ? 'In' : 'Out',
+        isIncome: isIncome
+      });
+    }
+  });
+
+  // Sort transactions by date
+  transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Display KPIs
+  const kpiGrid = document.getElementById('kpiGrid');
+  kpiGrid.innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">总收入</div>
+      <div class="kpi-value" style="color: #4dbf91;">¥${totalIncome.toFixed(2)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">总支出</div>
+      <div class="kpi-value" style="color: #e05c5c;">¥${totalExpense.toFixed(2)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">净现金</div>
+      <div class="kpi-value" style="color: ${currentBalance >= 0 ? '#4dbf91' : '#e05c5c'};">¥${currentBalance.toFixed(2)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">交易笔数</div>
+      <div class="kpi-value">${transactions.length}</div>
+    </div>
+  `;
+
+  // Display table
+  const tableBody = document.getElementById('tableBody');
+  tableBody.innerHTML = transactions.map(t => `
+    <tr>
+      <td>${t.date}</td>
+      <td>${t.description}</td>
+      <td style="text-align: right; color: ${t.isIncome ? '#4dbf91' : '#e05c5c'};">¥${t.amount.toFixed(2)}</td>
+      <td>${t.type}</td>
+    </tr>
+  `).join('');
+
+  dashboardEmpty.style.display = 'none';
+  dashboardContent.style.display = 'block';
 }
 </script>
 
