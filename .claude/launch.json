@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "cashflow-app",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-p", "3456", "."],
+      "runtimeExecutable": "ruby",
+      "runtimeArgs": ["-run", "-e", "httpd", ".", "-p", "3456"],
       "port": 3456
     }
   ]
