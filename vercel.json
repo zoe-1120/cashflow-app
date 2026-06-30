@@ -1,1 +1,17 @@
-{}
+{
+  "version": 2,
+  "name": "cashflow-diagnostic",
+  "public": true,
+  "buildCommand": "echo 'Build complete'",
+  "outputDirectory": ".",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html",
+      "status": 200
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
