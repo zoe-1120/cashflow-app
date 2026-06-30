@@ -318,7 +318,7 @@ function handleFile(file) {
     Papa.parse(e.target.result, {
       header: true,
       complete: res => {
-        csvData = res.data.filter(row => row.Date || row.date);
+        csvData = res.data.filter(row => (row.Date || row.date || row.DATE || row.日期) && (parseFloat(row.Amount || row.amount || 0) > 0));
         const item = document.createElement('div');
         item.className = 'file-item';
         item.innerHTML = '<strong>' + file.name + '</strong> ✅ ' + csvData.length + ' rows';
