@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>现金流诊断平台</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     :root {
       --bg: #002528;
-      --bg2: #003330;
+      --card: #003330;
       --gold: #b09b7b;
       --text: #e8e0d4;
       --muted: #9a9080;
@@ -17,35 +18,38 @@
       --green: #4dbf91;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--bg); color: var(--text); font-family: Arial, sans-serif; font-size: 14px; }
+    body { background: var(--bg); color: var(--text); font-family: Arial, sans-serif; }
     .header { background: linear-gradient(135deg, #001a1c, #002528); border-bottom: 2px solid var(--gold); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
     .logo { font-size: 13px; font-weight: 700; color: var(--gold); }
+    .nav-link { background: var(--border); color: var(--text); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.3s; }
+    .nav-link:hover { background: var(--gold); color: var(--bg); }
     .container { max-width: 1300px; margin: 0 auto; padding: 20px; }
     .page { display: none; }
     .page.active { display: block; }
     .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 60px; }
-    .card { background: var(--bg2); border: 2px solid var(--border); border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; }
+    .card { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.3s; }
     .card:hover { border-color: var(--gold); background: #004040; }
     .card-icon { font-size: 48px; margin-bottom: 20px; }
     .card-title { font-size: 18px; font-weight: bold; color: var(--gold); margin-bottom: 15px; }
-    .upload-box { border: 2px dashed var(--border); border-radius: 8px; padding: 60px; text-align: center; background: #001a20; margin: 30px 0; cursor: pointer; }
+    .card-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+    .tabs { display: flex; background: #001e22; border-bottom: 1px solid var(--border); gap: 5px; margin: 20px 0; }
+    .tab { padding: 10px 18px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 12px; border-bottom: 3px solid transparent; }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .upload-box { border: 2px dashed var(--border); border-radius: 8px; padding: 60px; text-align: center; background: #001a20; cursor: pointer; margin: 30px 0; transition: all 0.3s; }
     .upload-box:hover { border-color: var(--gold); background: #002a35; }
     .upload-box p { margin: 10px 0; color: var(--muted); }
     input[type="file"] { display: none; }
-    .result { margin-top: 20px; padding: 15px; border-radius: 6px; background: #001a0e; border: 1px solid var(--green); color: var(--green); display: none; }
-    .file-list { margin-top: 20px; }
-    .file-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 10px; font-size: 12px; border-left: 3px solid var(--green); }
-    .tabs { display: flex; background: #001e22; border-bottom: 1px solid var(--border); gap: 5px; margin: 20px 0; overflow-x: auto; flex-wrap: wrap; }
-    .tab { padding: 10px 14px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 11px; border-bottom: 3px solid transparent; white-space: nowrap; }
-    .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 14px 0; }
-    .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 13px; }
-    .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
-    .kpi-value { font-size: 22px; font-weight: bold; color: var(--gold); }
+    .result { margin-top: 20px; padding: 15px; border-radius: 6px; display: none; border: 1px solid; }
+    .result.success { background: #001a0e; border-color: var(--green); color: var(--green); display: block; }
+    .file-list { margin-top: 20px; max-height: 300px; overflow-y: auto; }
+    .file-item { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 10px; font-size: 12px; border-left: 3px solid var(--green); }
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 14px; }
+    .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 13px; }
+    .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+    .kpi-value { font-size: 22px; font-weight: bold; color: var(--gold); margin-top: 8px; }
     .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
-    .chart-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin: 14px 0; }
+    .chart-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-top: 14px; }
     .chart-title { font-size: 12px; font-weight: 700; color: var(--gold); margin-bottom: 15px; }
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
     .input-group { display: flex; flex-direction: column; gap: 5px; }
@@ -58,220 +62,329 @@
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
     th { padding: 8px; background: #001820; border: 1px solid var(--border); text-align: left; font-weight: 600; color: var(--gold); }
     td { padding: 8px; border: 1px solid var(--border); color: var(--text); }
-    .alert { background: #1a0505; border: 1px solid var(--red); border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 12px; color: #d08080; display: none; }
-    @media (max-width: 900px) { .home-grid { grid-template-columns: 1fr; } .kpi-row { grid-template-columns: 1fr; } .input-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
 
 <div class="header">
   <div class="logo">💰 现金流诊断平台</div>
-  <button class="btn btn-back" id="homeBtn" style="display:none; margin:0;" onclick="goHome()">← 首页</button>
+  <button class="nav-link" id="homeBtn" style="display:none;" onclick="showPage('home')">← 首页</button>
 </div>
 
 <div class="container">
-  <!-- HOME -->
   <div id="home" class="page active">
     <h1 style="text-align: center; color: var(--gold); margin: 40px 0;">现金流诊断平台</h1>
     <p style="text-align: center; color: var(--muted); margin-bottom: 60px;">选择功能开始</p>
     <div class="home-grid">
-      <div class="card" onclick="goUpload()">
+      <div class="card" onclick="showPage('upload')">
         <div class="card-icon">📥</div>
         <div class="card-title">导入财务数据</div>
-        <p style="color: var(--muted); font-size: 12px;">上传 CSV 数据进行分析</p>
+        <div class="card-desc">上传 CSV/Excel 文件夹，自动生成现金流分析和财务摘要</div>
       </div>
-      <div class="card" onclick="goDashboard()">
+      <div class="card" onclick="showPage('dashboard')">
         <div class="card-icon">📊</div>
         <div class="card-title">Executive Dashboard</div>
-        <p style="color: var(--muted); font-size: 12px;">完整的财务诊断分析</p>
+        <div class="card-desc">7个分析标签页，全面诊断公司财务健康，识别改善机会</div>
       </div>
     </div>
   </div>
 
-  <!-- UPLOAD -->
   <div id="upload" class="page">
-    <button class="btn btn-back" onclick="goHome()">← 返回首页</button>
-    <h2 style="color: var(--gold); margin: 20px 0;">📥 导入财务数据</h2>
-
-    <div class="upload-box" id="dropZone" onclick="document.getElementById('fileInput').click()">
-      <p style="font-size: 20px; font-weight: bold;">📤 点击此处选择文件或拖放</p>
-      <p>支持 CSV 格式（Date, Description, Amount, Type）</p>
-      <input type="file" id="fileInput" accept=".csv" onchange="handleFile(event.target.files[0])">
+    <button class="btn btn-back" onclick="showPage('home')">← 返回首页</button>
+    <h2 style="color: var(--gold); margin-bottom: 20px;">📥 导入财务数据</h2>
+    <div class="upload-box" id="dropZone">
+      <p style="font-size: 20px; font-weight: bold;">📤 拖放文件夹/文件到此</p>
+      <p>或点击选择文件夹</p>
+      <p style="font-size: 11px; margin-top: 10px; color: var(--green);">💡 支持: Excel · CSV · PDF · PNG</p>
+      <input type="file" id="fileInput" multiple webkitdirectory mozdirectory onchange="handleFileInput(this)">
     </div>
-
     <div class="result" id="result"></div>
     <div class="file-list" id="fileList"></div>
-    <div id="analysisBtn" style="text-align: center; margin-top: 30px; display: none;">
-      <button class="btn" style="background: var(--green); color: #000; padding: 15px 40px; font-size: 14px;" onclick="goDashboard()">📊 查看 Dashboard →</button>
+    <div id="analyzeBtn" style="display: none; text-align: center; margin-top: 30px;">
+      <button class="btn" style="background: var(--green); color: #000; padding: 15px 40px;" onclick="processAndEnter()">进入 Dashboard 分析数据 →</button>
     </div>
   </div>
 
-  <!-- DASHBOARD -->
   <div id="dashboard" class="page">
-    <button class="btn btn-back" onclick="goHome()">← 返回首页</button>
-    <h2 style="color: var(--gold);">📊 Executive Dashboard</h2>
-
+    <button class="btn btn-back" onclick="showPage('home')">← 返回首页</button>
+    <h2 style="color: var(--gold);">📊 Executive Dashboard - 现金流诊断报告</h2>
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('overview', this)">Overview</button>
-      <button class="tab" onclick="switchTab('cashflow', this)">Cash Flow</button>
-      <button class="tab" onclick="switchTab('wc', this)">Working Cap</button>
-      <button class="tab" onclick="switchTab('pl', this)">P&L</button>
-      <button class="tab" onclick="switchTab('debt', this)">Debt</button>
-      <button class="tab" onclick="switchTab('action', this)">Action</button>
-      <button class="tab" onclick="switchTab('input', this)">Live Input</button>
+      <button class="tab active" onclick="switchDashboardTab('overview', this)">📈 Overview</button>
+      <button class="tab" onclick="switchDashboardTab('cashflow', this)">💰 Cash Flow</button>
+      <button class="tab" onclick="switchDashboardTab('workingcap', this)">🔄 Working Capital</button>
+      <button class="tab" onclick="switchDashboardTab('pl', this)">📊 P&L</button>
+      <button class="tab" onclick="switchDashboardTab('debt', this)">📋 Debt</button>
+      <button class="tab" onclick="switchDashboardTab('action', this)">✅ Action Plan</button>
+      <button class="tab" onclick="switchDashboardTab('input', this)">✏️ Live Input</button>
     </div>
 
-    <div id="overview" class="tab-content active">
-      <div class="alert" id="alert"></div>
+    <div id="overview" class="tab-content" style="display: block;">
       <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">NET CASH</div><div class="kpi-value" id="kpi-cash">—</div></div>
-        <div class="kpi"><div class="kpi-label">LOSS</div><div class="kpi-value" id="kpi-loss">—</div></div>
-        <div class="kpi"><div class="kpi-label">EQUITY</div><div class="kpi-value" id="kpi-equity">—</div></div>
-        <div class="kpi"><div class="kpi-label">MARGIN</div><div class="kpi-value" id="kpi-margin">—</div></div>
-        <div class="kpi"><div class="kpi-label">CYCLE</div><div class="kpi-value" id="kpi-cycle">—</div></div>
+        <div class="kpi"><div class="kpi-label">NET CASH · 净现金</div><div class="kpi-value" id="kpi-netcash">—</div></div>
+        <div class="kpi"><div class="kpi-label">MONTHLY LOSS · 月度亏损</div><div class="kpi-value" id="kpi-loss">—</div></div>
+        <div class="kpi"><div class="kpi-label">EQUITY · 股东权益</div><div class="kpi-value" id="kpi-equity">—</div></div>
+        <div class="kpi"><div class="kpi-label">GROSS MARGIN · 毛利率</div><div class="kpi-value" id="kpi-margin">—</div></div>
+        <div class="kpi"><div class="kpi-label">CASH CYCLE · 现金周期</div><div class="kpi-value" id="kpi-cycle">—</div></div>
       </div>
     </div>
 
-    <div id="cashflow" class="tab-content">
+    <div id="cashflow" class="tab-content" style="display: none;">
       <div class="chart-box">
-        <div class="chart-title">💰 Cash Flow</div>
-        <table><thead><tr><th>Type</th><th>Amount</th></tr></thead><tbody>
-          <tr><td>Operating CF</td><td id="cf-op">—</td></tr>
-          <tr><td><strong>Net CF</strong></td><td id="cf-net"><strong>—</strong></td></tr>
-        </tbody></table>
+        <div class="chart-title">💰 Cash Flow Waterfall</div>
+        <table><thead><tr><th>类型</th><th>金额</th></tr></thead><tbody id="cf-table"></tbody></table>
       </div>
     </div>
 
-    <div id="wc" class="tab-content">
+    <div id="workingcap" class="tab-content" style="display: none;">
       <div class="chart-box">
-        <div class="chart-title">🔄 Working Capital</div>
-        <table><thead><tr><th>Metric</th><th>Days</th></tr></thead><tbody>
-          <tr><td>Receivables</td><td id="wc-rec">30</td></tr>
-          <tr><td>Inventory</td><td id="wc-inv">60</td></tr>
-          <tr><td>Payables</td><td id="wc-pay">45</td></tr>
-          <tr><td><strong>Cycle</strong></td><td id="wc-cycle"><strong>45</strong></td></tr>
-        </tbody></table>
+        <div class="chart-title">🔄 Working Capital Analysis</div>
+        <table><thead><tr><th>指标</th><th>天数</th></tr></thead>
+          <tbody>
+            <tr><td>Receivables Days</td><td id="wc-rec">—</td></tr>
+            <tr><td>Inventory Days</td><td id="wc-inv">—</td></tr>
+            <tr><td>Payables Days</td><td id="wc-pay">—</td></tr>
+            <tr><td><strong>Cash Cycle</strong></td><td id="wc-cycle"><strong>—</strong></td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <div id="pl" class="tab-content">
+    <div id="pl" class="tab-content" style="display: none;">
       <div class="chart-box">
-        <div class="chart-title">📊 P&L</div>
-        <table><thead><tr><th>Item</th><th>Amount</th><th>%</th></tr></thead><tbody>
-          <tr><td>Revenue</td><td id="pl-rev">—</td><td>100%</td></tr>
-          <tr><td>COGS</td><td id="pl-cogs">—</td><td id="pl-cogs-pct">—</td></tr>
-          <tr><td>Gross Profit</td><td id="pl-gp">—</td><td id="pl-gp-pct">—</td></tr>
-          <tr><td>OpEx</td><td id="pl-opex">—</td><td id="pl-opex-pct">—</td></tr>
-          <tr><td><strong>Net Profit</strong></td><td id="pl-net"><strong>—</strong></td><td id="pl-net-pct"><strong>—</strong></td></tr>
-        </tbody></table>
+        <div class="chart-title">📊 Profit & Loss Statement</div>
+        <table><thead><tr><th>项目</th><th>金额</th><th>占收入比例</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Revenue</strong></td><td id="pl-rev"><strong>—</strong></td><td><strong>100%</strong></td></tr>
+            <tr><td>&nbsp;&nbsp;COGS</td><td id="pl-cogs">—</td><td id="pl-cogs-pct">—</td></tr>
+            <tr><td><strong>Gross Profit</strong></td><td id="pl-gp"><strong>—</strong></td><td id="pl-gp-pct"><strong>—</strong></td></tr>
+            <tr><td>&nbsp;&nbsp;Operating Expenses</td><td id="pl-opex">—</td><td id="pl-opex-pct">—</td></tr>
+            <tr><td><strong>Net Profit</strong></td><td id="pl-net"><strong>—</strong></td><td id="pl-net-pct"><strong>—</strong></td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <div id="debt" class="tab-content">
+    <div id="debt" class="tab-content" style="display: none;">
       <div class="chart-box">
-        <div class="chart-title">📋 Debt</div>
-        <table><thead><tr><th>Type</th><th>Amount</th></tr></thead><tbody>
-          <tr><td>ST Loan</td><td id="debt-st">—</td></tr>
-          <tr><td>Bank OD</td><td id="debt-od">—</td></tr>
-          <tr><td>LT Loan</td><td id="debt-lt">—</td></tr>
-          <tr><td><strong>Total</strong></td><td id="debt-total"><strong>—</strong></td></tr>
-        </tbody></table>
+        <div class="chart-title">📋 Debt Structure</div>
+        <table><thead><tr><th>债务类型</th><th>金额</th></tr></thead>
+          <tbody>
+            <tr><td>Short-term Loan</td><td id="debt-st">—</td></tr>
+            <tr><td>Bank Overdraft</td><td id="debt-od">—</td></tr>
+            <tr><td>Long-term Loan</td><td id="debt-lt">—</td></tr>
+            <tr><td><strong>Total Debt</strong></td><td id="debt-total"><strong>—</strong></td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <div id="action" class="tab-content">
+    <div id="action" class="tab-content" style="display: none;">
       <div class="chart-box">
-        <div class="chart-title">✅ Actions</div>
-        <div style="margin-top: 15px; font-size: 12px;">
-          <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; margin-bottom: 10px; color: var(--green);">
-            <strong>1. Accelerate AR</strong><br><span style="color: var(--muted); font-size: 11px;">Reduce collection days</span>
+        <div class="chart-title">✅ 优先级行动计划</div>
+        <div style="margin-top: 15px;">
+          <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; margin-bottom: 10px; font-size: 12px; color: var(--green);">
+            <strong>1. 加速应收账款回收</strong><br>
+            <span style="color: var(--muted); font-size: 11px;">如果缩短客户支付时间，可立即释放现金</span>
           </div>
-          <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; margin-bottom: 10px; color: var(--green);">
-            <strong>2. Optimize Inventory</strong><br><span style="color: var(--muted); font-size: 11px;">Reduce holding days</span>
+          <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; margin-bottom: 10px; font-size: 12px; color: var(--green);">
+            <strong>2. 优化库存管理</strong><br>
+            <span style="color: var(--muted); font-size: 11px;">减少库存周转天数，释放被占用的资金</span>
           </div>
-          <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; color: var(--green);">
-            <strong>3. Repay Debt</strong><br><span style="color: var(--muted); font-size: 11px;">Prioritize high-cost debt</span>
+          <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; font-size: 12px; color: var(--green);">
+            <strong>3. 优先偿还高成本债务</strong><br>
+            <span style="color: var(--muted); font-size: 11px;">银行透支利息最高，应优先处理</span>
           </div>
         </div>
       </div>
     </div>
 
-    <div id="input" class="tab-content">
+    <div id="input" class="tab-content" style="display: none;">
       <div class="chart-box">
-        <div class="chart-title">✏️ Enter Data</div>
-        <h3 style="color: var(--gold); font-size: 13px; margin: 20px 0 15px;">Balance Sheet</h3>
+        <div class="chart-title">✏️ 输入公司财务数据</div>
+        <h3 style="color: var(--gold); font-size: 13px; margin: 20px 0 15px;">资产负债表数据</h3>
         <div class="input-grid">
-          <div class="input-group"><label>Cash</label><input type="number" id="input-cash" value="500000" onchange="updateDashboard()"></div>
-          <div class="input-group"><label>Receivables</label><input type="number" id="input-rec" value="200000" onchange="updateDashboard()"></div>
-          <div class="input-group"><label>Inventory</label><input type="number" id="input-inv" value="150000" onchange="updateDashboard()"></div>
-          <div class="input-group"><label>Payables</label><input type="number" id="input-pay" value="100000" onchange="updateDashboard()"></div>
-          <div class="input-group"><label>ST Loan</label><input type="number" id="input-stl" value="200000" onchange="updateDashboard()"></div>
-          <div class="input-group"><label>Bank OD</label><input type="number" id="input-od" value="50000" onchange="updateDashboard()"></div>
-          <div class="input-group"><label>LT Loan</label><input type="number" id="input-lt" value="0" onchange="updateDashboard()"></div>
-          <div class="input-group"><label>Equity</label><input type="number" id="input-equity" value="500000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>现金</label><input type="number" id="input-cash" value="500000"></div>
+          <div class="input-group"><label>应收账款</label><input type="number" id="input-rec" value="200000"></div>
+          <div class="input-group"><label>库存</label><input type="number" id="input-inv" value="150000"></div>
+          <div class="input-group"><label>应付账款</label><input type="number" id="input-pay" value="100000"></div>
+          <div class="input-group"><label>短期贷款</label><input type="number" id="input-stl" value="200000"></div>
+          <div class="input-group"><label>银行透支</label><input type="number" id="input-od" value="50000"></div>
+          <div class="input-group"><label>长期贷款</label><input type="number" id="input-ltl" value="0"></div>
         </div>
-
-        <h3 style="color: var(--gold); font-size: 13px; margin: 20px 0 15px;">P&L</h3>
+        <h3 style="color: var(--gold); font-size: 13px; margin: 25px 0 15px;">损益表数据</h3>
         <div class="input-grid">
-          <div class="input-group"><label>Revenue</label><input type="number" id="input-rev" value="500000" onchange="updateDashboard()"></div>
-          <div class="input-group"><label>COGS</label><input type="number" id="input-cogs" value="350000" onchange="updateDashboard()"></div>
-          <div class="input-group"><label>OpEx</label><input type="number" id="input-opex" value="150000" onchange="updateDashboard()"></div>
-          <div class="input-group"><label>Finance</label><input type="number" id="input-fin" value="20000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>月度收入</label><input type="number" id="input-rev" value="500000"></div>
+          <div class="input-group"><label>成本 (COGS)</label><input type="number" id="input-cogs" value="350000"></div>
+          <div class="input-group"><label>运营费用</label><input type="number" id="input-opex" value="150000"></div>
+          <div class="input-group"><label>财务费用</label><input type="number" id="input-fin" value="20000"></div>
         </div>
+        <button class="btn" onclick="calculateDashboard()">计算并更新仪表板</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-function goHome() { showPage('home'); }
-function goUpload() { showPage('upload'); }
-function goDashboard() { showPage('dashboard'); updateDashboard(); }
+let uploadedFiles = [];
 
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(page).classList.add('active');
   document.getElementById('homeBtn').style.display = page === 'home' ? 'none' : 'block';
+  window.scrollTo(0, 0);
 }
 
-function switchTab(tab, btn) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.getElementById(tab).classList.add('active');
+function switchDashboardTab(tab, btn) {
+  ['overview', 'cashflow', 'workingcap', 'pl', 'debt', 'action', 'input'].forEach(t => {
+    document.getElementById(t).style.display = 'none';
+  });
+  document.getElementById(tab).style.display = 'block';
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
 }
 
-function handleFile(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    Papa.parse(e.target.result, {
-      header: true,
-      complete: (res) => {
-        const data = res.data.filter(row => Object.keys(row).some(k => k.toLowerCase().includes('date')));
-        if (data.length > 0) {
-          document.getElementById('result').style.display = 'block';
-          document.getElementById('result').textContent = '✅ 已加载 ' + data.length + ' 条数据';
-          document.getElementById('analysisBtn').style.display = 'block';
-          const item = document.createElement('div');
-          item.className = 'file-item';
-          item.textContent = file.name + ' ✅ ' + data.length + ' rows';
-          document.getElementById('fileList').appendChild(item);
-        } else {
-          alert('❌ No data found');
-        }
-      }
-    });
-  };
-  reader.readAsText(file);
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const result = document.getElementById('result');
+const fileList = document.getElementById('fileList');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.style.borderColor = '#b09b7b';
+  dropZone.style.background = '#002a35';
+});
+dropZone.addEventListener('dragleave', () => {
+  dropZone.style.borderColor = '#005050';
+  dropZone.style.background = '#001a20';
+});
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.style.borderColor = '#005050';
+  dropZone.style.background = '#001a20';
+  fileList.innerHTML = '';
+  uploadedFiles = [];
+  for (let f of e.dataTransfer.files) handleFile(f);
+});
+
+function handleFileInput(input) {
+  fileList.innerHTML = '';
+  uploadedFiles = [];
+  for (let f of input.files) handleFile(f);
 }
 
-function updateDashboard() {
+function handleFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const item = document.createElement('div');
+  item.className = 'file-item';
+
+  if (ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = e => {
+      Papa.parse(e.target.result, {
+        header: true,
+        complete: res => {
+          const rows = res.data.filter(row => row.Date || row.date || row.DATE);
+          uploadedFiles.push({name: file.name, type: 'csv', data: rows});
+          item.innerHTML = '<strong>📄 ' + file.name + '</strong> ✅ ' + rows.length + ' 行';
+          fileList.appendChild(item);
+          updateResult();
+        }
+      });
+    };
+    reader.readAsText(file);
+  }
+  else if (ext === 'xlsx' || ext === 'xls') {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+        uploadedFiles.push({name: file.name, type: 'excel', data: json});
+        item.innerHTML = '<strong>📊 ' + file.name + '</strong> ✅ ' + json.length + ' 行';
+        fileList.appendChild(item);
+        updateResult();
+      } catch (err) {
+        item.innerHTML = '<strong>📊 ' + file.name + '</strong> ❌ 解析失败';
+        fileList.appendChild(item);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  else if (ext === 'pdf') {
+    item.innerHTML = '<strong>📑 ' + file.name + '</strong> ⏳ PDF 已收到';
+    fileList.appendChild(item);
+    uploadedFiles.push({name: file.name, type: 'pdf', data: null});
+    updateResult();
+  }
+  else if (['png', 'jpg', 'jpeg'].includes(ext)) {
+    item.innerHTML = '<strong>🖼️ ' + file.name + '</strong> ⏳ 图片已收到';
+    fileList.appendChild(item);
+    uploadedFiles.push({name: file.name, type: 'image', data: null});
+    updateResult();
+  }
+}
+
+function updateResult() {
+  if (uploadedFiles.length === 0) return;
+  result.className = 'result success';
+  const csvCount = uploadedFiles.filter(f => f.type === 'csv').length;
+  const excelCount = uploadedFiles.filter(f => f.type === 'excel').length;
+  result.innerHTML = `✅ 已加载 ${uploadedFiles.length} 个文件 (CSV: ${csvCount}, Excel: ${excelCount})`;
+  document.getElementById('analyzeBtn').style.display = 'block';
+}
+
+function processAndEnter() {
+  if (uploadedFiles.length === 0) {
+    alert('请先上传文件');
+    return;
+  }
+
+  let extractedData = {};
+  uploadedFiles.forEach(file => {
+    if (file.data) {
+      file.data.forEach(row => {
+        Object.keys(row).forEach(key => {
+          const val = parseFloat(row[key]) || 0;
+          const k = key.toLowerCase();
+          if (k.includes('cash') || k.includes('现金')) extractedData.cash = extractedData.cash || val;
+          else if (k.includes('receivable') || k.includes('应收')) extractedData.rec = extractedData.rec || val;
+          else if (k.includes('inventory') || k.includes('库存')) extractedData.inv = extractedData.inv || val;
+          else if (k.includes('payable') || k.includes('应付')) extractedData.pay = extractedData.pay || val;
+          else if (k.includes('revenue') || k.includes('收入') || k.includes('sales')) extractedData.rev = extractedData.rev || val;
+          else if (k.includes('cogs') || k.includes('cost') || k.includes('成本')) extractedData.cogs = extractedData.cogs || val;
+          else if (k.includes('opex') || k.includes('expense') || k.includes('费用')) extractedData.opex = extractedData.opex || val;
+          else if (k.includes('loan') || k.includes('贷款')) extractedData.stl = extractedData.stl || val;
+          else if (k.includes('overdraft') || k.includes('透支')) extractedData.od = extractedData.od || val;
+        });
+      });
+    }
+  });
+
+  if (extractedData.cash) document.getElementById('input-cash').value = extractedData.cash;
+  if (extractedData.rec) document.getElementById('input-rec').value = extractedData.rec;
+  if (extractedData.inv) document.getElementById('input-inv').value = extractedData.inv;
+  if (extractedData.pay) document.getElementById('input-pay').value = extractedData.pay;
+  if (extractedData.rev) document.getElementById('input-rev').value = extractedData.rev;
+  if (extractedData.cogs) document.getElementById('input-cogs').value = extractedData.cogs;
+  if (extractedData.opex) document.getElementById('input-opex').value = extractedData.opex;
+  if (extractedData.stl) document.getElementById('input-stl').value = extractedData.stl;
+  if (extractedData.od) document.getElementById('input-od').value = extractedData.od;
+
+  showPage('dashboard');
+  calculateDashboard();
+}
+
+function calculateDashboard() {
   const cash = parseFloat(document.getElementById('input-cash').value) || 0;
+  const rec = parseFloat(document.getElementById('input-rec').value) || 0;
+  const inv = parseFloat(document.getElementById('input-inv').value) || 0;
+  const pay = parseFloat(document.getElementById('input-pay').value) || 0;
   const stl = parseFloat(document.getElementById('input-stl').value) || 0;
   const od = parseFloat(document.getElementById('input-od').value) || 0;
-  const lt = parseFloat(document.getElementById('input-lt').value) || 0;
-  const equity = parseFloat(document.getElementById('input-equity').value) || 0;
+  const ltl = parseFloat(document.getElementById('input-ltl')?.value) || 0;
   const rev = parseFloat(document.getElementById('input-rev').value) || 0;
   const cogs = parseFloat(document.getElementById('input-cogs').value) || 0;
   const opex = parseFloat(document.getElementById('input-opex').value) || 0;
@@ -279,45 +392,49 @@ function updateDashboard() {
 
   const netCash = cash - od;
   const gp = rev - cogs;
-  const npm = rev > 0 ? (gp / rev * 100) : 0;
-  const netProfit = gp - opex - fin;
+  const npm = rev > 0 ? gp / rev : 0;
+  const netProfit = rev - cogs - opex - fin;
 
-  document.getElementById('kpi-cash').textContent = '¥' + netCash.toFixed(0);
-  document.getElementById('kpi-cash').style.color = netCash >= 0 ? 'var(--green)' : 'var(--red)';
-  document.getElementById('kpi-loss').textContent = netProfit < 0 ? '¥' + Math.abs(netProfit).toFixed(0) : '—';
-  document.getElementById('kpi-margin').textContent = npm.toFixed(1) + '%';
-  document.getElementById('kpi-equity').textContent = '¥' + equity.toFixed(0);
-  document.getElementById('kpi-cycle').textContent = '90天';
+  document.getElementById('kpi-netcash').textContent = '¥' + netCash.toFixed(0);
+  document.getElementById('kpi-netcash').style.color = netCash >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('kpi-loss').textContent = '¥' + Math.max(0, -netProfit).toFixed(0);
+  document.getElementById('kpi-equity').textContent = '¥' + (cash + rec + inv - pay - stl - od - ltl).toFixed(0);
+  document.getElementById('kpi-margin').textContent = (npm * 100).toFixed(1) + '%';
 
-  const alert = document.getElementById('alert');
-  if (netCash < 0) {
-    alert.style.display = 'block';
-    alert.innerHTML = '🔴 <strong>Critical Alert:</strong> Net cash is negative!';
-  } else {
-    alert.style.display = 'none';
-  }
+  document.getElementById('cf-table').innerHTML = `
+    <tr><td>Starting Cash</td><td style="color: var(--green);">¥${cash.toFixed(0)}</td></tr>
+    <tr><td>Operating CF</td><td>${netProfit >= 0 ? '+' : ''}¥${netProfit.toFixed(0)}</td></tr>
+    <tr><td>Ending Cash</td><td style="color: var(--green);">¥${netCash.toFixed(0)}</td></tr>
+  `;
+
+  const recDays = rev > 0 ? (rec / (rev / 30)) : 0;
+  const invDays = cogs > 0 ? (inv / (cogs / 30)) : 0;
+  const payDays = cogs > 0 ? (pay / (cogs / 30)) : 0;
+  const cycle = recDays + invDays - payDays;
+
+  document.getElementById('wc-rec').textContent = recDays.toFixed(0);
+  document.getElementById('wc-inv').textContent = invDays.toFixed(0);
+  document.getElementById('wc-pay').textContent = payDays.toFixed(0);
+  document.getElementById('wc-cycle').textContent = cycle.toFixed(0);
 
   document.getElementById('pl-rev').textContent = '¥' + rev.toFixed(0);
   document.getElementById('pl-cogs').textContent = '¥' + cogs.toFixed(0);
-  document.getElementById('pl-cogs-pct').textContent = rev > 0 ? (cogs/rev*100).toFixed(0) + '%' : '—';
+  document.getElementById('pl-cogs-pct').textContent = (cogs/rev*100).toFixed(0) + '%';
   document.getElementById('pl-gp').textContent = '¥' + gp.toFixed(0);
-  document.getElementById('pl-gp-pct').textContent = rev > 0 ? (gp/rev*100).toFixed(0) + '%' : '—';
+  document.getElementById('pl-gp-pct').textContent = (gp/rev*100).toFixed(0) + '%';
   document.getElementById('pl-opex').textContent = '¥' + opex.toFixed(0);
-  document.getElementById('pl-opex-pct').textContent = rev > 0 ? (opex/rev*100).toFixed(0) + '%' : '—';
+  document.getElementById('pl-opex-pct').textContent = (opex/rev*100).toFixed(0) + '%';
   document.getElementById('pl-net').textContent = '¥' + netProfit.toFixed(0);
-  document.getElementById('pl-net-pct').textContent = rev > 0 ? (netProfit/rev*100).toFixed(1) + '%' : '—';
+  document.getElementById('pl-net-pct').textContent = (netProfit/rev*100).toFixed(1) + '%';
   document.getElementById('pl-net').style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
 
   document.getElementById('debt-st').textContent = '¥' + stl.toFixed(0);
   document.getElementById('debt-od').textContent = '¥' + od.toFixed(0);
-  document.getElementById('debt-lt').textContent = '¥' + lt.toFixed(0);
-  document.getElementById('debt-total').textContent = '¥' + (stl + od + lt).toFixed(0);
-
-  document.getElementById('cf-op').textContent = '¥' + (netProfit).toFixed(0);
-  document.getElementById('cf-net').textContent = '¥' + (netProfit).toFixed(0);
+  document.getElementById('debt-lt').textContent = '¥' + ltl.toFixed(0);
+  document.getElementById('debt-total').textContent = '¥' + (stl + od + ltl).toFixed(0);
 }
 
-updateDashboard();
+calculateDashboard();
 </script>
 
 </body>
