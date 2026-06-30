@@ -378,6 +378,11 @@
       </select>
     </div>
 
+    <div id="extractionDebug" style="margin-top: 20px; background: #001a20; border: 1px solid #005050; border-radius: 6px; padding: 15px; display: none;">
+      <h3 style="color: var(--gold); margin-bottom: 10px; font-size: 12px;">🔍 数据提取调试信息</h3>
+      <div id="debugContent" style="font-size: 11px; color: var(--muted); white-space: pre-wrap; max-height: 200px; overflow-y: auto; font-family: monospace;"></div>
+    </div>
+
     <button class="btn btn-primary" id="analyzeBtn" style="display: none; margin-top: 30px; width: 100%; padding: 15px;" onclick="processAndEnter()">✓ 分析数据进入Dashboard →</button>
   </div>
 
@@ -894,56 +899,122 @@ function processAndEnter() {
     fin: []
   };
 
-  uploadedFiles.forEach(file => {
+  let debugLog = '📊 数据提取开始...\n\n';
+
+  uploadedFiles.forEach((file, fileIdx) => {
+    debugLog += `\n📁 文件 ${fileIdx + 1}: ${file.name}\n`;
+    debugLog += `类型: ${file.type}\n`;
+
     if (file.data) {
-      file.data.forEach(row => {
+      debugLog += `行数: ${file.data.length}\n`;
+      debugLog += `字段列表: ${Object.keys(file.data[0] || {}).join(', ')}\n`;
+      debugLog += `\n提取结果:\n`;
+
+      file.data.forEach((row, rowIdx) => {
         Object.keys(row).forEach(key => {
           const val = parseFloat(row[key]);
-          if (!isNaN(val) && val > 0) {
+          if (!isNaN(val) && val !== 0) {
             const k = key.toLowerCase();
-            if (k.includes('cash') || k.includes('balance') || k.includes('现金')) extracted.cash.push(val);
-            if (k.includes('receivable') || k.includes('应收')) extracted.receivables.push(val);
-            if (k.includes('inventory') || k.includes('库存')) extracted.inventory.push(val);
-            if (k.includes('payable') || k.includes('应付')) extracted.payables.push(val);
-            if ((k.includes('loan') || k.includes('贷款')) && (k.includes('short') || k.includes('短期'))) extracted.stl.push(val);
-            if (k.includes('overdraft') || k.includes('透支')) extracted.od.push(val);
-            if ((k.includes('loan') || k.includes('贷款')) && (k.includes('long') || k.includes('长期'))) extracted.ltl.push(val);
-            if (k.includes('revenue') || k.includes('sales') || k.includes('income') || k.includes('收入')) extracted.revenue.push(val);
-            if (k.includes('cogs') || k.includes('cost') || k.includes('成本')) extracted.cogs.push(val);
-            if (k.includes('opex') || k.includes('expense') || k.includes('费用')) extracted.opex.push(val);
-            if (k.includes('finance') || k.includes('interest') || k.includes('利息')) extracted.fin.push(val);
+
+            // 改进的字段匹配（支持更多变体）
+            if (k.includes('cash') || k.includes('balance') || k.includes('现金') || k.includes('余额')) {
+              extracted.cash.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 现金\n`;
+            }
+            if (k.includes('receivable') || k.includes('ar') || k.includes('应收') || k.includes('accounts receivable')) {
+              extracted.receivables.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 应收\n`;
+            }
+            if (k.includes('inventory') || k.includes('stock') || k.includes('库存') || k.includes('存货')) {
+              extracted.inventory.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 库存\n`;
+            }
+            if (k.includes('payable') || k.includes('ap') || k.includes('应付') || k.includes('accounts payable')) {
+              extracted.payables.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 应付\n`;
+            }
+            if ((k.includes('loan') || k.includes('贷款') || k.includes('credit')) && (k.includes('short') || k.includes('短期') || k.includes('st'))) {
+              extracted.stl.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 短期贷款\n`;
+            }
+            if (k.includes('overdraft') || k.includes('透支') || k.includes('od')) {
+              extracted.od.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 银行透支\n`;
+            }
+            if ((k.includes('loan') || k.includes('贷款') || k.includes('credit')) && (k.includes('long') || k.includes('长期') || k.includes('lt'))) {
+              extracted.ltl.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 长期贷款\n`;
+            }
+            if (k.includes('revenue') || k.includes('sales') || k.includes('income') || k.includes('收入') || k.includes('销售')) {
+              extracted.revenue.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 收入\n`;
+            }
+            if (k.includes('cogs') || k.includes('cost') || k.includes('成本') || k.includes('cost of goods')) {
+              extracted.cogs.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 成本\n`;
+            }
+            if (k.includes('opex') || k.includes('expense') || k.includes('费用') || k.includes('operating')) {
+              extracted.opex.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 运营费用\n`;
+            }
+            if (k.includes('finance') || k.includes('interest') || k.includes('利息') || k.includes('financial')) {
+              extracted.fin.push(val);
+              debugLog += `  ✓ ${key}: ${val} → 财务费用\n`;
+            }
           }
         });
       });
     }
     else if (file.text) {
+      debugLog += `文本长度: ${file.text.length} 字符\n`;
       const patterns = {
-        cash: /(?:现金|cash|余额|balance)[：:]\s*([0-9,]+)/gi,
-        receivables: /(?:应收|receivable)[：:]\s*([0-9,]+)/gi,
-        inventory: /(?:库存|inventory)[：:]\s*([0-9,]+)/gi,
-        payables: /(?:应付|payable)[：:]\s*([0-9,]+)/gi,
-        stl: /(?:短期贷款|short-term|短贷)[：:]\s*([0-9,]+)/gi,
-        od: /(?:透支|overdraft)[：:]\s*([0-9,]+)/gi,
-        ltl: /(?:长期贷款|long-term|长贷)[：:]\s*([0-9,]+)/gi,
-        revenue: /(?:收入|revenue|销售|sales)[：:]\s*([0-9,]+)/gi,
-        cogs: /(?:成本|cogs|cost)[：:]\s*([0-9,]+)/gi,
-        opex: /(?:运营费用|opex|expense)[：:]\s*([0-9,]+)/gi,
-        fin: /(?:财务费用|利息|interest)[：:]\s*([0-9,]+)/gi
+        cash: /(?:现金|cash|余额|balance|bank\s+account)[：:\s]*([0-9,]+)/gi,
+        receivables: /(?:应收|receivable|ar)[：:\s]*([0-9,]+)/gi,
+        inventory: /(?:库存|存货|inventory|stock)[：:\s]*([0-9,]+)/gi,
+        payables: /(?:应付|payable|ap)[：:\s]*([0-9,]+)/gi,
+        stl: /(?:短期贷款|short.?term|短贷|st\s+loan)[：:\s]*([0-9,]+)/gi,
+        od: /(?:透支|overdraft|od)[：:\s]*([0-9,]+)/gi,
+        ltl: /(?:长期贷款|long.?term|长贷|lt\s+loan)[：:\s]*([0-9,]+)/gi,
+        revenue: /(?:收入|revenue|销售|sales|income)[：:\s]*([0-9,]+)/gi,
+        cogs: /(?:成本|cogs|cost)[：:\s]*([0-9,]+)/gi,
+        opex: /(?:运营费用|opex|expense)[：:\s]*([0-9,]+)/gi,
+        fin: /(?:财务费用|利息|interest|finance)[：:\s]*([0-9,]+)/gi
       };
 
+      debugLog += `\n提取结果:\n`;
       Object.keys(patterns).forEach(key => {
         let match;
         while ((match = patterns[key].exec(file.text)) !== null) {
           const val = parseFloat(match[1].replace(/,/g, ''));
           if (!isNaN(val) && val > 0) {
             extracted[key].push(val);
+            debugLog += `  ✓ 找到 ${key}: ${val}\n`;
           }
         }
       });
     }
   });
 
-  // 填充表单（取最大值或平均值）
+  debugLog += `\n\n✅ 提取汇总:\n`;
+  debugLog += `现金: ${extracted.cash.join(', ') || '未找到'}\n`;
+  debugLog += `应收: ${extracted.receivables.join(', ') || '未找到'}\n`;
+  debugLog += `库存: ${extracted.inventory.join(', ') || '未找到'}\n`;
+  debugLog += `应付: ${extracted.payables.join(', ') || '未找到'}\n`;
+  debugLog += `短期贷款: ${extracted.stl.join(', ') || '未找到'}\n`;
+  debugLog += `透支: ${extracted.od.join(', ') || '未找到'}\n`;
+  debugLog += `长期贷款: ${extracted.ltl.join(', ') || '未找到'}\n`;
+  debugLog += `收入: ${extracted.revenue.join(', ') || '未找到'}\n`;
+  debugLog += `成本: ${extracted.cogs.join(', ') || '未找到'}\n`;
+  debugLog += `运营费用: ${extracted.opex.join(', ') || '未找到'}\n`;
+  debugLog += `财务费用: ${extracted.fin.join(', ') || '未找到'}\n`;
+
+  // 显示调试信息
+  const debugDiv = document.getElementById('extractionDebug');
+  const debugContent = document.getElementById('debugContent');
+  debugContent.textContent = debugLog;
+  debugDiv.style.display = 'block';
+
+  // 填充表单（取最大值）
   if (extracted.cash.length > 0) document.getElementById('input-cash').value = Math.max(...extracted.cash);
   if (extracted.receivables.length > 0) document.getElementById('input-rec').value = Math.max(...extracted.receivables);
   if (extracted.inventory.length > 0) document.getElementById('input-inv').value = Math.max(...extracted.inventory);
