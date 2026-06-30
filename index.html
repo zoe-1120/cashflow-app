@@ -4,12 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>现金流诊断平台</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     :root {
       --bg: #002528;
-      --card: #003330;
+      --bg2: #003330;
       --gold: #b09b7b;
       --text: #e8e0d4;
       --muted: #9a9080;
@@ -18,400 +17,306 @@
       --green: #4dbf91;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--bg); color: var(--text); font-family: Arial, sans-serif; }
-    .header {
-      background: linear-gradient(135deg, #001a1c, #002528);
-      border-bottom: 2px solid var(--gold);
-      padding: 12px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+    body { background: var(--bg); color: var(--text); font-family: Arial, sans-serif; font-size: 14px; }
+    .header { background: linear-gradient(135deg, #001a1c, #002528); border-bottom: 2px solid var(--gold); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
     .logo { font-size: 13px; font-weight: 700; color: var(--gold); }
-    .nav-link {
-      background: var(--border);
-      color: var(--text);
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.3s;
-    }
-    .nav-link:hover { background: var(--gold); color: var(--bg); }
     .container { max-width: 1300px; margin: 0 auto; padding: 20px; }
     .page { display: none; }
     .page.active { display: block; }
-
-    /* HOME */
     .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 60px; }
-    .card { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.3s; }
+    .card { background: var(--bg2); border: 2px solid var(--border); border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; }
     .card:hover { border-color: var(--gold); background: #004040; }
     .card-icon { font-size: 48px; margin-bottom: 20px; }
     .card-title { font-size: 18px; font-weight: bold; color: var(--gold); margin-bottom: 15px; }
-    .card-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
-
-    /* TABS */
-    .tabs { display: flex; background: #001e22; border-bottom: 1px solid var(--border); gap: 5px; margin: 20px 0; flex-wrap: wrap; }
-    .tab { padding: 10px 14px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 11px; border-bottom: 3px solid transparent; white-space: nowrap; }
-    .tab:hover { color: var(--text); }
-    .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    /* UPLOAD */
-    .upload-box { border: 2px dashed var(--border); border-radius: 8px; padding: 60px; text-align: center; background: #001a20; cursor: pointer; margin: 30px 0; transition: all 0.3s; }
+    .upload-box { border: 2px dashed var(--border); border-radius: 8px; padding: 60px; text-align: center; background: #001a20; margin: 30px 0; cursor: pointer; }
     .upload-box:hover { border-color: var(--gold); background: #002a35; }
     .upload-box p { margin: 10px 0; color: var(--muted); }
     input[type="file"] { display: none; }
-    .result { margin-top: 20px; padding: 15px; border-radius: 6px; display: none; border: 1px solid var(--green); background: #001a0e; color: var(--green); }
-    .file-list { margin-top: 20px; max-height: 300px; overflow-y: auto; }
-    .file-item { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 10px; font-size: 12px; border-left: 3px solid var(--green); }
-
-    /* DASHBOARD */
+    .result { margin-top: 20px; padding: 15px; border-radius: 6px; background: #001a0e; border: 1px solid var(--green); color: var(--green); display: none; }
+    .file-list { margin-top: 20px; }
+    .file-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 10px; font-size: 12px; border-left: 3px solid var(--green); }
+    .tabs { display: flex; background: #001e22; border-bottom: 1px solid var(--border); gap: 5px; margin: 20px 0; overflow-x: auto; flex-wrap: wrap; }
+    .tab { padding: 10px 14px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 11px; border-bottom: 3px solid transparent; white-space: nowrap; }
+    .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
     .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 14px 0; }
-    .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 13px; }
-    .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
-    .kpi-value { font-size: 20px; font-weight: bold; color: var(--gold); margin-top: 8px; }
+    .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 13px; }
+    .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+    .kpi-value { font-size: 22px; font-weight: bold; color: var(--gold); }
     .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
-
-    .chart-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin: 14px 0; }
+    .chart-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin: 14px 0; }
     .chart-title { font-size: 12px; font-weight: 700; color: var(--gold); margin-bottom: 15px; }
-
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
     .input-group { display: flex; flex-direction: column; gap: 5px; }
     .input-group label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
     .input-group input { background: #001820; border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: 4px; font-size: 12px; }
     .input-group input:focus { outline: none; border-color: var(--gold); }
-
     .btn { background: var(--gold); color: #002528; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px; margin-top: 10px; }
     .btn:hover { background: #c9a66e; }
     .btn-back { background: var(--border); color: var(--text); margin-bottom: 20px; }
-
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
     th { padding: 8px; background: #001820; border: 1px solid var(--border); text-align: left; font-weight: 600; color: var(--gold); }
     td { padding: 8px; border: 1px solid var(--border); color: var(--text); }
-
-    @media (max-width: 900px) { 
-      .home-grid { grid-template-columns: 1fr; }
-      .kpi-row { grid-template-columns: 1fr; }
-      .input-grid { grid-template-columns: 1fr; }
-      .tabs { flex-wrap: wrap; }
-    }
+    .alert { background: #1a0505; border: 1px solid var(--red); border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 12px; color: #d08080; display: none; }
+    @media (max-width: 900px) { .home-grid { grid-template-columns: 1fr; } .kpi-row { grid-template-columns: 1fr; } .input-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
 
 <div class="header">
   <div class="logo">💰 现金流诊断平台</div>
-  <button class="nav-link" id="homeBtn" style="display:none;" onclick="showPage('home')">← 首页</button>
+  <button class="btn btn-back" id="homeBtn" style="display:none; margin:0;" onclick="goHome()">← 首页</button>
 </div>
 
 <div class="container">
-  <!-- HOME PAGE -->
+  <!-- HOME -->
   <div id="home" class="page active">
     <h1 style="text-align: center; color: var(--gold); margin: 40px 0;">现金流诊断平台</h1>
     <p style="text-align: center; color: var(--muted); margin-bottom: 60px;">选择功能开始</p>
-
     <div class="home-grid">
-      <div class="card" onclick="showPage('upload')">
+      <div class="card" onclick="goUpload()">
         <div class="card-icon">📥</div>
         <div class="card-title">导入财务数据</div>
-        <div class="card-desc">上传 CSV 交易文件，自动生成现金流分析和财务摘要</div>
+        <p style="color: var(--muted); font-size: 12px;">上传 CSV 数据进行分析</p>
       </div>
-      <div class="card" onclick="showPage('dashboard')">
+      <div class="card" onclick="goDashboard()">
         <div class="card-icon">📊</div>
         <div class="card-title">Executive Dashboard</div>
-        <div class="card-desc">7个分析标签页，全面诊断公司财务健康，识别改善机会</div>
+        <p style="color: var(--muted); font-size: 12px;">完整的财务诊断分析</p>
       </div>
     </div>
   </div>
 
-  <!-- UPLOAD PAGE -->
+  <!-- UPLOAD -->
   <div id="upload" class="page">
-    <button class="btn btn-back" onclick="showPage('home')">← 返回首页</button>
-    <h2 style="color: var(--gold); margin-bottom: 20px;">📥 导入财务数据</h2>
+    <button class="btn btn-back" onclick="goHome()">← 返回首页</button>
+    <h2 style="color: var(--gold); margin: 20px 0;">📥 导入财务数据</h2>
 
-    <div class="upload-box" id="dropZone">
-      <p style="font-size: 20px; font-weight: bold;">📤 拖放 CSV 文件到此</p>
-      <p>或点击选择文件</p>
-      <p style="font-size: 11px; margin-top: 10px; color: var(--green);">💡 可一次上传多个文件</p>
-      <input type="file" id="fileInput" multiple onchange="handleFileInput(this)">
+    <div class="upload-box" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <p style="font-size: 20px; font-weight: bold;">📤 点击此处选择文件或拖放</p>
+      <p>支持 CSV 格式（Date, Description, Amount, Type）</p>
+      <input type="file" id="fileInput" accept=".csv" onchange="handleFile(event.target.files[0])">
     </div>
 
     <div class="result" id="result"></div>
     <div class="file-list" id="fileList"></div>
-    <div id="analysisResult"></div>
+    <div id="analysisBtn" style="text-align: center; margin-top: 30px; display: none;">
+      <button class="btn" style="background: var(--green); color: #000; padding: 15px 40px; font-size: 14px;" onclick="goDashboard()">📊 查看 Dashboard →</button>
+    </div>
   </div>
 
-  <!-- DASHBOARD PAGE -->
+  <!-- DASHBOARD -->
   <div id="dashboard" class="page">
-    <button class="btn btn-back" onclick="showPage('home')">← 返回首页</button>
+    <button class="btn btn-back" onclick="goHome()">← 返回首页</button>
     <h2 style="color: var(--gold);">📊 Executive Dashboard</h2>
 
     <div class="tabs">
-      <button class="tab active" onclick="switchDashboardTab('overview', this)">Overview</button>
-      <button class="tab" onclick="switchDashboardTab('cashflow', this)">Cash Flow</button>
-      <button class="tab" onclick="switchDashboardTab('wc', this)">Working Cap</button>
-      <button class="tab" onclick="switchDashboardTab('pl', this)">P&L</button>
-      <button class="tab" onclick="switchDashboardTab('debt', this)">Debt</button>
-      <button class="tab" onclick="switchDashboardTab('action', this)">Action Plan</button>
-      <button class="tab" onclick="switchDashboardTab('input', this)">Live Input</button>
+      <button class="tab active" onclick="switchTab('overview', this)">Overview</button>
+      <button class="tab" onclick="switchTab('cashflow', this)">Cash Flow</button>
+      <button class="tab" onclick="switchTab('wc', this)">Working Cap</button>
+      <button class="tab" onclick="switchTab('pl', this)">P&L</button>
+      <button class="tab" onclick="switchTab('debt', this)">Debt</button>
+      <button class="tab" onclick="switchTab('action', this)">Action</button>
+      <button class="tab" onclick="switchTab('input', this)">Live Input</button>
     </div>
 
-    <!-- OVERVIEW TAB -->
     <div id="overview" class="tab-content active">
+      <div class="alert" id="alert"></div>
       <div class="kpi-row">
         <div class="kpi"><div class="kpi-label">NET CASH</div><div class="kpi-value" id="kpi-cash">—</div></div>
-        <div class="kpi"><div class="kpi-label">MONTHLY LOSS</div><div class="kpi-value" id="kpi-loss">—</div></div>
+        <div class="kpi"><div class="kpi-label">LOSS</div><div class="kpi-value" id="kpi-loss">—</div></div>
         <div class="kpi"><div class="kpi-label">EQUITY</div><div class="kpi-value" id="kpi-equity">—</div></div>
         <div class="kpi"><div class="kpi-label">MARGIN</div><div class="kpi-value" id="kpi-margin">—</div></div>
         <div class="kpi"><div class="kpi-label">CYCLE</div><div class="kpi-value" id="kpi-cycle">—</div></div>
       </div>
     </div>
 
-    <!-- CASHFLOW TAB -->
     <div id="cashflow" class="tab-content">
       <div class="chart-box">
-        <div class="chart-title">Cash Flow Structure</div>
-        <table><thead><tr><th>Type</th><th>Amount</th></tr></thead>
-          <tbody>
-            <tr><td>Operating CF</td><td id="cf-op">—</td></tr>
-            <tr><td>Investing CF</td><td id="cf-inv">—</td></tr>
-            <tr><td>Financing CF</td><td id="cf-fin">—</td></tr>
-            <tr><td><strong>Net CF</strong></td><td id="cf-net"><strong>—</strong></td></tr>
-          </tbody>
-        </table>
+        <div class="chart-title">💰 Cash Flow</div>
+        <table><thead><tr><th>Type</th><th>Amount</th></tr></thead><tbody>
+          <tr><td>Operating CF</td><td id="cf-op">—</td></tr>
+          <tr><td><strong>Net CF</strong></td><td id="cf-net"><strong>—</strong></td></tr>
+        </tbody></table>
       </div>
     </div>
 
-    <!-- WORKING CAPITAL TAB -->
     <div id="wc" class="tab-content">
       <div class="chart-box">
-        <div class="chart-title">Working Capital Days</div>
-        <table><thead><tr><th>Metric</th><th>Days</th></tr></thead>
-          <tbody>
-            <tr><td>Receivables Days</td><td id="wc-rec">—</td></tr>
-            <tr><td>Inventory Days</td><td id="wc-inv">—</td></tr>
-            <tr><td>Payables Days</td><td id="wc-pay">—</td></tr>
-            <tr><td><strong>Cash Cycle</strong></td><td id="wc-cycle"><strong>—</strong></td></tr>
-          </tbody>
-        </table>
+        <div class="chart-title">🔄 Working Capital</div>
+        <table><thead><tr><th>Metric</th><th>Days</th></tr></thead><tbody>
+          <tr><td>Receivables</td><td id="wc-rec">30</td></tr>
+          <tr><td>Inventory</td><td id="wc-inv">60</td></tr>
+          <tr><td>Payables</td><td id="wc-pay">45</td></tr>
+          <tr><td><strong>Cycle</strong></td><td id="wc-cycle"><strong>45</strong></td></tr>
+        </tbody></table>
       </div>
     </div>
 
-    <!-- P&L TAB -->
     <div id="pl" class="tab-content">
       <div class="chart-box">
-        <div class="chart-title">Profit & Loss</div>
-        <table><thead><tr><th>Item</th><th>Amount</th><th>%</th></tr></thead>
-          <tbody>
-            <tr><td>Revenue</td><td id="pl-rev">—</td><td>100%</td></tr>
-            <tr><td>COGS</td><td id="pl-cogs">—</td><td id="pl-cogs-pct">—</td></tr>
-            <tr><td>Gross Profit</td><td id="pl-gp">—</td><td id="pl-gp-pct">—</td></tr>
-            <tr><td>OpEx</td><td id="pl-opex">—</td><td id="pl-opex-pct">—</td></tr>
-            <tr><td><strong>Net Profit</strong></td><td id="pl-net"><strong>—</strong></td><td id="pl-net-pct"><strong>—</strong></td></tr>
-          </tbody>
-        </table>
+        <div class="chart-title">📊 P&L</div>
+        <table><thead><tr><th>Item</th><th>Amount</th><th>%</th></tr></thead><tbody>
+          <tr><td>Revenue</td><td id="pl-rev">—</td><td>100%</td></tr>
+          <tr><td>COGS</td><td id="pl-cogs">—</td><td id="pl-cogs-pct">—</td></tr>
+          <tr><td>Gross Profit</td><td id="pl-gp">—</td><td id="pl-gp-pct">—</td></tr>
+          <tr><td>OpEx</td><td id="pl-opex">—</td><td id="pl-opex-pct">—</td></tr>
+          <tr><td><strong>Net Profit</strong></td><td id="pl-net"><strong>—</strong></td><td id="pl-net-pct"><strong>—</strong></td></tr>
+        </tbody></table>
       </div>
     </div>
 
-    <!-- DEBT TAB -->
     <div id="debt" class="tab-content">
       <div class="chart-box">
-        <div class="chart-title">Debt Structure</div>
-        <table><thead><tr><th>Type</th><th>Amount</th><th>Urgency</th></tr></thead>
-          <tbody>
-            <tr><td>Short-term Loan</td><td id="debt-st">—</td><td style="color: var(--red);">🔴 HIGH</td></tr>
-            <tr><td>Bank Overdraft</td><td id="debt-od">—</td><td style="color: var(--red);">🔴 CRITICAL</td></tr>
-            <tr><td>Long-term Loan</td><td id="debt-lt">—</td><td style="color: var(--green);">🟢 LOW</td></tr>
-            <tr><td><strong>Total</strong></td><td id="debt-total"><strong>—</strong></td><td></td></tr>
-          </tbody>
-        </table>
+        <div class="chart-title">📋 Debt</div>
+        <table><thead><tr><th>Type</th><th>Amount</th></tr></thead><tbody>
+          <tr><td>ST Loan</td><td id="debt-st">—</td></tr>
+          <tr><td>Bank OD</td><td id="debt-od">—</td></tr>
+          <tr><td>LT Loan</td><td id="debt-lt">—</td></tr>
+          <tr><td><strong>Total</strong></td><td id="debt-total"><strong>—</strong></td></tr>
+        </tbody></table>
       </div>
     </div>
 
-    <!-- ACTION PLAN TAB -->
     <div id="action" class="tab-content">
       <div class="chart-box">
-        <div class="chart-title">Recommended Actions to Improve Cash</div>
+        <div class="chart-title">✅ Actions</div>
         <div style="margin-top: 15px; font-size: 12px;">
           <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; margin-bottom: 10px; color: var(--green);">
-            <strong>1. Accelerate AR Collection</strong><br><span style="color: var(--muted); font-size: 11px;">Reduce customer payment cycle</span>
+            <strong>1. Accelerate AR</strong><br><span style="color: var(--muted); font-size: 11px;">Reduce collection days</span>
           </div>
           <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; margin-bottom: 10px; color: var(--green);">
-            <strong>2. Optimize Inventory</strong><br><span style="color: var(--muted); font-size: 11px;">Reduce inventory holding days</span>
+            <strong>2. Optimize Inventory</strong><br><span style="color: var(--muted); font-size: 11px;">Reduce holding days</span>
           </div>
           <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; color: var(--green);">
-            <strong>3. Repay High-Cost Debt</strong><br><span style="color: var(--muted); font-size: 11px;">Bank overdraft first (highest interest)</span>
+            <strong>3. Repay Debt</strong><br><span style="color: var(--muted); font-size: 11px;">Prioritize high-cost debt</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- LIVE INPUT TAB -->
     <div id="input" class="tab-content">
       <div class="chart-box">
-        <div class="chart-title">Enter Financial Data</div>
+        <div class="chart-title">✏️ Enter Data</div>
         <h3 style="color: var(--gold); font-size: 13px; margin: 20px 0 15px;">Balance Sheet</h3>
         <div class="input-grid">
-          <div class="input-group"><label>Cash</label><input type="number" id="input-cash" value="500000"></div>
-          <div class="input-group"><label>Receivables</label><input type="number" id="input-rec" value="200000"></div>
-          <div class="input-group"><label>Inventory</label><input type="number" id="input-inv" value="150000"></div>
-          <div class="input-group"><label>Payables</label><input type="number" id="input-pay" value="100000"></div>
-          <div class="input-group"><label>ST Loan</label><input type="number" id="input-stl" value="200000"></div>
-          <div class="input-group"><label>Bank OD</label><input type="number" id="input-od" value="50000"></div>
+          <div class="input-group"><label>Cash</label><input type="number" id="input-cash" value="500000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>Receivables</label><input type="number" id="input-rec" value="200000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>Inventory</label><input type="number" id="input-inv" value="150000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>Payables</label><input type="number" id="input-pay" value="100000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>ST Loan</label><input type="number" id="input-stl" value="200000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>Bank OD</label><input type="number" id="input-od" value="50000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>LT Loan</label><input type="number" id="input-lt" value="0" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>Equity</label><input type="number" id="input-equity" value="500000" onchange="updateDashboard()"></div>
         </div>
 
-        <h3 style="color: var(--gold); font-size: 13px; margin: 20px 0 15px;">P&L (Monthly)</h3>
+        <h3 style="color: var(--gold); font-size: 13px; margin: 20px 0 15px;">P&L</h3>
         <div class="input-grid">
-          <div class="input-group"><label>Revenue</label><input type="number" id="input-rev" value="500000"></div>
-          <div class="input-group"><label>COGS</label><input type="number" id="input-cogs" value="350000"></div>
-          <div class="input-group"><label>OpEx</label><input type="number" id="input-opex" value="150000"></div>
-          <div class="input-group"><label>LT Loan</label><input type="number" id="input-lt" value="0"></div>
+          <div class="input-group"><label>Revenue</label><input type="number" id="input-rev" value="500000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>COGS</label><input type="number" id="input-cogs" value="350000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>OpEx</label><input type="number" id="input-opex" value="150000" onchange="updateDashboard()"></div>
+          <div class="input-group"><label>Finance</label><input type="number" id="input-fin" value="20000" onchange="updateDashboard()"></div>
         </div>
-
-        <button class="btn" onclick="updateDashboard()">Calculate & Update</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
+function goHome() { showPage('home'); }
+function goUpload() { showPage('upload'); }
+function goDashboard() { showPage('dashboard'); updateDashboard(); }
+
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(page).classList.add('active');
   document.getElementById('homeBtn').style.display = page === 'home' ? 'none' : 'block';
-  window.scrollTo(0, 0);
 }
 
-function switchDashboardTab(tab, btn) {
+function switchTab(tab, btn) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.getElementById(tab).classList.add('active');
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
 }
 
-// FILE UPLOAD
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-let csvData = [];
-
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  dropZone.style.borderColor = '#b09b7b';
-});
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  for (let f of e.dataTransfer.files) handleFile(f);
-});
-
-function handleFileInput(input) {
-  for (let f of input.files) handleFile(f);
-}
-
 function handleFile(file) {
+  if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = (e) => {
     Papa.parse(e.target.result, {
       header: true,
-      complete: res => {
-        csvData = res.data.filter(row => {
-        // Try to find any column that might be a date
-        let hasDate = Object.keys(row).some(key => key.toLowerCase().includes('date') || key.includes('日期'));
-        // Try to find any column with amount
-        let amount = Object.values(row).find(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0);
-        return hasDate && amount;
-      });
-        const item = document.createElement('div');
-        item.className = 'file-item';
-        item.innerHTML = '<strong>' + file.name + '</strong> ✅ ' + csvData.length + ' rows';
-        document.getElementById('fileList').appendChild(item);
-        document.getElementById('result').innerHTML = '✅ Loaded ' + csvData.length + ' transactions';
-        showAnalysis();
+      complete: (res) => {
+        const data = res.data.filter(row => Object.keys(row).some(k => k.toLowerCase().includes('date')));
+        if (data.length > 0) {
+          document.getElementById('result').style.display = 'block';
+          document.getElementById('result').textContent = '✅ 已加载 ' + data.length + ' 条数据';
+          document.getElementById('analysisBtn').style.display = 'block';
+          const item = document.createElement('div');
+          item.className = 'file-item';
+          item.textContent = file.name + ' ✅ ' + data.length + ' rows';
+          document.getElementById('fileList').appendChild(item);
+        } else {
+          alert('❌ No data found');
+        }
       }
     });
   };
   reader.readAsText(file);
 }
 
-function showAnalysis() {
-  if (csvData.length === 0) {
-    alert('❌ No data loaded. Check CSV format: Date,Description,Amount,Type');
-    return;
-  }
-  console.log('✅ showAnalysis called with', csvData.length, 'rows');
-  let totalIn = 0, totalOut = 0;
-  csvData.forEach(row => {
-    const amt = parseFloat(row.Amount || 0);
-    const type = (row.Type || '').toLowerCase();
-    if (type.includes('in')) totalIn += amt;
-    else totalOut += amt;
-  });
-  const html = `
-    <div style="margin-top: 30px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
-      <h3 style="color: var(--gold); margin-bottom: 15px;">💡 Analysis Results</h3>
-      <table>
-        <tr><td>Total Income</td><td style="text-align: right; color: var(--green);">¥${totalIn.toFixed(2)}</td></tr>
-        <tr><td>Total Expense</td><td style="text-align: right; color: var(--red);">¥${totalOut.toFixed(2)}</td></tr>
-        <tr><td><strong>Net Change</strong></td><td style="text-align: right; color: ${(totalIn-totalOut)>=0?'var(--green)':'var(--red)'}; font-weight: bold;">¥${(totalIn-totalOut).toFixed(2)}</strong></td></tr>
-        <tr><td>Transactions</td><td style="text-align: right;">${csvData.length}</td></tr>
-      </table>
-      <div style="text-align: center; margin-top: 20px;">
-        <button class="btn" style="background: var(--green); color: #000; padding: 15px 40px; font-size: 14px;" onclick="alert('✅ Data loaded! CSV analysis complete.')">📊 Enter</button>
-      </div>
-    </div>
-  `;
-  document.getElementById('analysisResult').innerHTML = html;
-}
-
 function updateDashboard() {
   const cash = parseFloat(document.getElementById('input-cash').value) || 0;
-  const rec = parseFloat(document.getElementById('input-rec').value) || 0;
-  const inv = parseFloat(document.getElementById('input-inv').value) || 0;
-  const pay = parseFloat(document.getElementById('input-pay').value) || 0;
   const stl = parseFloat(document.getElementById('input-stl').value) || 0;
   const od = parseFloat(document.getElementById('input-od').value) || 0;
   const lt = parseFloat(document.getElementById('input-lt').value) || 0;
+  const equity = parseFloat(document.getElementById('input-equity').value) || 0;
   const rev = parseFloat(document.getElementById('input-rev').value) || 0;
   const cogs = parseFloat(document.getElementById('input-cogs').value) || 0;
   const opex = parseFloat(document.getElementById('input-opex').value) || 0;
+  const fin = parseFloat(document.getElementById('input-fin').value) || 0;
 
   const netCash = cash - od;
   const gp = rev - cogs;
   const npm = rev > 0 ? (gp / rev * 100) : 0;
-  const netProfit = gp - opex;
+  const netProfit = gp - opex - fin;
 
-  // OVERVIEW
   document.getElementById('kpi-cash').textContent = '¥' + netCash.toFixed(0);
   document.getElementById('kpi-cash').style.color = netCash >= 0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('kpi-loss').textContent = netProfit < 0 ? '¥' + Math.abs(netProfit).toFixed(0) : '—';
   document.getElementById('kpi-margin').textContent = npm.toFixed(1) + '%';
-  document.getElementById('kpi-cycle').textContent = '90 days';
+  document.getElementById('kpi-equity').textContent = '¥' + equity.toFixed(0);
+  document.getElementById('kpi-cycle').textContent = '90天';
 
-  // P&L
+  const alert = document.getElementById('alert');
+  if (netCash < 0) {
+    alert.style.display = 'block';
+    alert.innerHTML = '🔴 <strong>Critical Alert:</strong> Net cash is negative!';
+  } else {
+    alert.style.display = 'none';
+  }
+
   document.getElementById('pl-rev').textContent = '¥' + rev.toFixed(0);
   document.getElementById('pl-cogs').textContent = '¥' + cogs.toFixed(0);
   document.getElementById('pl-cogs-pct').textContent = rev > 0 ? (cogs/rev*100).toFixed(0) + '%' : '—';
   document.getElementById('pl-gp').textContent = '¥' + gp.toFixed(0);
+  document.getElementById('pl-gp-pct').textContent = rev > 0 ? (gp/rev*100).toFixed(0) + '%' : '—';
   document.getElementById('pl-opex').textContent = '¥' + opex.toFixed(0);
   document.getElementById('pl-opex-pct').textContent = rev > 0 ? (opex/rev*100).toFixed(0) + '%' : '—';
   document.getElementById('pl-net').textContent = '¥' + netProfit.toFixed(0);
   document.getElementById('pl-net-pct').textContent = rev > 0 ? (netProfit/rev*100).toFixed(1) + '%' : '—';
   document.getElementById('pl-net').style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
 
-  // DEBT
   document.getElementById('debt-st').textContent = '¥' + stl.toFixed(0);
   document.getElementById('debt-od').textContent = '¥' + od.toFixed(0);
   document.getElementById('debt-lt').textContent = '¥' + lt.toFixed(0);
   document.getElementById('debt-total').textContent = '¥' + (stl + od + lt).toFixed(0);
 
-  alert('✅ Dashboard updated! Check all tabs');
+  document.getElementById('cf-op').textContent = '¥' + (netProfit).toFixed(0);
+  document.getElementById('cf-net').textContent = '¥' + (netProfit).toFixed(0);
 }
 
-// Initialize
 updateDashboard();
 </script>
 
