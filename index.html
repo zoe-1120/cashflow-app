@@ -1,17 +1,24 @@
 <!DOCTYPE html>
-<html lang="zh"><head><meta charset="UTF-8"><title>Cash Flow Dashboard</title><style>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>MMC × AI 利润杠杆 — Cash Flow Diagnostic Report</title>
+<style>
+
 :root{
-  --bg:#002528;--bg2:#003330;--bg3:#004040;
-  --gold:#b09b7b;--gold2:#9a8a6e;
-  --red:#e05c5c;--amber:#e0a95c;--green:#4dbf91;--blue:#5ca8e0;
-  --text:#e8e0d4;--muted:#9a9080;
-  --card:#003330;--border:#005050;
+  --bg:#0a0e27;--bg2:#0f1419;--bg3:#1a1f3a;
+  --gold:#c4a747;--gold2:#a8b438;
+  --red:#ff6b6b;--amber:#ffa94d;--green:#51cf66;--blue:#4dabf7;
+  --text:#e8e8f0;--muted:#8b92a4;
+  --card:#0f1419;--border:#2a3048;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;font-size:14px}
-.header{background:linear-gradient(135deg,#001a1c,#002528);border-bottom:2px solid var(--gold2);padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
-.logo{font-size:13px;font-weight:700;color:var(--gold)}
-.logo-sub{font-size:11px;color:var(--muted);margin-top:2px}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;font-size:14px}
+.header{background:linear-gradient(90deg,#0a0e27 0%,#0f1419 50%,#0a0e27 100%);border-bottom:1px solid var(--border);padding:14px 24px}
+.hdr-branding{font-size:10px;color:var(--muted);letter-spacing:0.5px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.hdr-main{display:flex;align-items:center;justify-content:space-between;padding-top:6px}
+.logo{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.5px}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:2px}
 .hdr-right{text-align:right;font-size:11px;color:var(--muted)}
 .hdr-badge{display:inline-block;background:#3a0000;color:var(--red);border:1px solid var(--red);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;margin-bottom:4px}
 .tabs{display:flex;background:#001e22;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
@@ -111,12 +118,26 @@ tr:last-child td{border-bottom:none}
 /* COLORS */
 .red{color:var(--red)}.amber{color:var(--amber)}.green{color:var(--green)}.blue{color:var(--blue)}.gold{color:var(--gold)}.muted{color:var(--muted)}
 .section-banner{background:#1a0505;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:#c08080;line-height:1.5}
-</style></head>
+
+</style>
+</head>
 <body>
+
 <div class="header">
-  <div><div class="logo" id="hdr-co">ABC COMPANY — CASH FLOW DIAGNOSTIC REPORT</div><div class="logo-sub" id="hdr-per">—</div></div>
-  <div class="hdr-right"><div class="hdr-badge">🔴 High Alert · 财务高危</div></div>
+  <div>
+    <div class="hdr-branding">Demo · MMC × AI 利润杠杆课作品 — 同一套 OGSM 倒推内核，可换任何行业皮 | © MMC Financial Planning · 企业数字操盘系统</div>
+    <div class="hdr-main">
+      <div>
+        <div class="logo" id="hdr-co">ABC Company — CASH FLOW DIAGNOSTIC REPORT · 现金流诊断报告</div>
+        <div class="logo-sub" id="hdr-per">Management Account YE2026 · 截至 31/03/2026</div>
+      </div>
+      <div class="hdr-right" style="text-align:right">
+        <div class="hdr-badge">🔴 High Alert · 财务高危</div>
+      </div>
+    </div>
+  </div>
 </div>
+
 <div class="tabs">
   <div class="tab active" onclick="go(0)">📊 Overview · 总览</div>
   <div class="tab" onclick="go(1)">💧 Cash Flow · 现金流</div>
@@ -124,12 +145,11 @@ tr:last-child td{border-bottom:none}
   <div class="tab" onclick="go(3)">📋 Profit &amp; Loss · 盈亏</div>
   <div class="tab" onclick="go(4)">🏦 Debt · 负债</div>
   <div class="tab" onclick="go(5)">✅ Action Plan · 行动计划</div>
-  <div class="tab" onclick="go(6)">📤 Upload · 上传</div>
-  <div class="tab" onclick="go(7)">✎ Live Input · 实时输入</div>
+  <div class="tab" onclick="go(6)">✎ Live Input · 实时输入</div>
 </div>
 
 
-<div class="page" id="page-0">
+<div class="page active" id="page-0">
   <div class="alert-bar">
     <b>🔴 Critical Alert · 高危警报：</b>
     股东权益已经变成负数（<span id="a-eq">—</span>）——从会计角度来看，公司的债务已经超过资产总值。现金只剩 <span id="a-cash">—</span>，但银行透支高达 <span id="a-od">—</span>。每个月公司都在亏损约 <span id="a-burn">—</span>，这份报告帮你找出问题在哪、怎么解决。
@@ -211,7 +231,6 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-</div>
 
 <div class="page" id="page-1">
   <div class="explain">
@@ -244,7 +263,6 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-</div>
 
 <div class="page" id="page-2">
   <div class="explain">
@@ -288,7 +306,6 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-</div>
 
 <div class="page" id="page-3">
   <div class="explain">
@@ -334,7 +351,6 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-</div>
 
 <div class="page" id="page-4">
   <div class="explain">
@@ -373,7 +389,6 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-</div>
 
 <div class="page" id="page-5">
   <div class="section-banner">
@@ -412,35 +427,8 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-</div>
 
 <div class="page" id="page-6">
-  <div class="explain">
-    <b>📤 Upload Excel File 上传 Excel 文件</b> — 支持标准财务报表格式。系统会自动识别和提取数据。<br>
-    <b>支持的 Sheet：</b>BS (资产负债表)、PL (损益表)、Cash Flow (现金流)
-  </div>
-  
-  <div class="section">
-    <div class="sec-hd">Step 1: Select & Parse Excel</div>
-    <div class="form-grid" style="grid-template-columns: 1fr;">
-      <div class="fg">
-        <label>Excel File (.xlsx)</label>
-        <input type="file" id="file-upload" accept=".xlsx,.xls" style="padding:10px;cursor:pointer;">
-      </div>
-    </div>
-    <button class="btn" onclick="parseExcelFile()">Parse File</button>
-    <div id="upload-status" style="margin-top:12px;font-size:12px;"></div>
-  </div>
-
-  <div class="section" id="preview-section" style="display:none;">
-    <div class="sec-hd">✅ Preview Extracted Data</div>
-    <div id="preview-content" style="font-size:12px;max-height:400px;overflow-y:auto;"></div>
-    <button class="btn" onclick="loadFromPreview()" style="margin-top:10px;">✓ Confirm & Load Data</button>
-  </div>
-</div>
-</div>
-
-<div class="page" id="page-7">
   <div class="section">
     <div class="sec-hd">📁 Load Sample Data 加载示例数据</div>
     <div style="display:flex;gap:10px;margin-bottom:14px">
@@ -508,7 +496,9 @@ tr:last-child td{border-bottom:none}
   <button class="btn" onclick="resetDemo()">Reset to ABC Company Demo 还原示例数据</button>
 </div>
 
+
 <script>
+
 
 var COMPANIES = {
   "abc": {
@@ -1183,121 +1173,7 @@ document.querySelectorAll('[data-k]').forEach(function(inp){
 syncInputs();
 render();
 
-function parseExcelFile(){
-  var fileInput = document.getElementById('file-upload');
-  if(!fileInput.files.length){
-    el('upload-status').innerHTML = '<span style="color:#e05c5c">❌ 请选择一个文件</span>';
-    return;
-  }
-  
-  el('upload-status').innerHTML = '<span style="color:#e0a95c">⏳ 处理中...</span>';
-  
-  var file = fileInput.files[0];
-  var reader = new FileReader();
-  reader.onload = function(e){
-    try {
-      if(typeof XLSX === 'undefined'){
-        el('upload-status').innerHTML = '<span style="color:#e05c5c">❌ 正在加载库... 请稍候</span>';
-        return;
-      }
-      var data = new Uint8Array(e.target.result);
-      var workbook = XLSX.read(data, {type: 'array'});
-      var extracted = extractFinancialData(workbook);
-      
-      if(extracted.error){
-        el('upload-status').innerHTML = '<span style="color:#e05c5c">❌ '+extracted.error+'</span>';
-        return;
-      }
-      
-      showPreview(extracted);
-      el('upload-status').innerHTML = '<span style="color:#4dbf91">✅ 解析成功！请检查下方数据</span>';
-      
-    } catch(err){
-      el('upload-status').innerHTML = '<span style="color:#e05c5c">❌ 解析失败: '+err.message+'</span>';
-      console.error(err);
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
+</script>
 
-function extractFinancialData(wb){
-  var res = {
-    company: 'Uploaded Company', period: 'Current Period',
-    cash:0, od:0, rec:0, inv:0, pay:0, equity:0, ltl:0, stl:0, dir:0, lease:0,
-    rev:0, cogs:0, adm:0, fin:0, cf_op:0, cf_inv:0, cf_fin:0, py_nc:0,
-    py_rev:0, py_cogs:0, py_adm:0, py_fin:0, py_rec:0, py_inv:0, py_pay:0
-  };
-  
-  function getVal(sheetName, cellRef){
-    if(!wb.Sheets[sheetName] || !wb.Sheets[sheetName][cellRef]) return 0;
-    var v = wb.Sheets[sheetName][cellRef].v;
-    return typeof v==='number' ? v : 0;
-  }
-  
-  // BS - Balance Sheet
-  if(wb.SheetNames.includes('BS')){
-    res.cash = Math.max(0, getVal('BS','C14'));
-    res.rec = Math.max(0, getVal('BS','C10'));
-    res.inv = Math.max(0, getVal('BS','C9'));
-    res.od = Math.max(0, getVal('BS','C38'));
-    res.pay = Math.max(0, getVal('BS','C35'));
-    res.equity = getVal('BS','C26');
-    res.ltl = Math.max(0, getVal('BS','C30'));
-    res.stl = Math.max(0, getVal('BS','C33'));
-    res.dir = Math.max(0, getVal('BS','C39'));
-    res.lease = Math.max(0, getVal('BS','C31'));
-    res.py_rec = Math.max(0, getVal('BS','D10'));
-    res.py_inv = Math.max(0, getVal('BS','D9'));
-    res.py_pay = Math.max(0, getVal('BS','D35'));
-    res.py_nc = getVal('BS','D14') - getVal('BS','D38');
-  }
-  
-  // PL - Profit & Loss
-  if(wb.SheetNames.includes('PL')){
-    res.rev = Math.max(0, getVal('PL','B6'));
-    res.cogs = Math.abs(getVal('PL','B7'));
-    res.adm = Math.abs(getVal('PL','B13'));
-    res.fin = Math.abs(getVal('PL','B17'));
-    res.py_rev = Math.max(0, getVal('PL','C6'));
-    res.py_cogs = Math.abs(getVal('PL','C7'));
-    res.py_adm = Math.abs(getVal('PL','C13'));
-    res.py_fin = Math.abs(getVal('PL','C17'));
-  }
-  
-  res.company = 'ABC COMPANY';
-  res.period = 'MA 2026';
-  
-  return res;
-}
-
-function showPreview(data){
-  el('preview-section').style.display = 'block';
-  var html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;"><div style="border:1px solid var(--border);padding:8px;border-radius:6px"><b style="color:var(--gold)">Balance Sheet</b><div style="font-size:11px;margin-top:6px">' +
-    'Cash: '+K(data.cash)+'<br>Receivables: '+K(data.rec)+'<br>Inventory: '+K(data.inv)+'<br>' +
-    'Payables: '+K(data.pay)+'<br>Equity: '+K(data.equity)+'<br>Total Debt: '+K(data.ltl+data.stl+data.od+data.lease)+'</div></div>' +
-    '<div style="border:1px solid var(--border);padding:8px;border-radius:6px"><b style="color:var(--gold)">P&amp;L</b><div style="font-size:11px;margin-top:6px">' +
-    'Revenue: '+K(data.rev)+'<br>COGS: '+K(data.cogs)+'<br>Gross Profit: '+K(data.rev-data.cogs)+'<br>' +
-    'Admin: '+K(data.adm)+'<br>Finance: '+K(data.fin)+'<br>Net: '+K(data.rev-data.cogs-data.adm-data.fin)+'</div></div>' +
-    '<div style="border:1px solid var(--border);padding:8px;border-radius:6px"><b style="color:var(--gold)">Prior Year</b><div style="font-size:11px;margin-top:6px">' +
-    'Revenue: '+K(data.py_rev)+'<br>COGS: '+K(data.py_cogs)+'<br>Admin: '+K(data.py_adm)+'<br>' +
-    'Net Cash: '+K(data.py_nc)+'</div></div></div>';
-  el('preview-content').innerHTML = html;
-  window.previewData = data;
-}
-
-function loadFromPreview(){
-  if(!window.previewData) return;
-  S = JSON.parse(JSON.stringify(window.previewData));
-  syncInputs();
-  render();
-  go(0);
-  alert('✅ 数据已加载！请查看各个分析 Tab');
-}
-
-// Load XLSX library dynamically
-if(typeof XLSX === 'undefined'){
-  var s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js';
-  document.head.appendChild(s);
-}
-</script></body></html>
+</body>
+</html>
