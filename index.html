@@ -362,50 +362,68 @@ function processAndEnter() {
   }
 
   console.log('📁 上传的文件:', uploadedFiles);
-  let extractedData = {};
+  let extractedData = {
+    cash: 0,
+    rec: 0,
+    pay: 0,
+    rev: 0,
+    outflow: 0
+  };
 
   uploadedFiles.forEach(file => {
     console.log(`\n📄 处理文件: ${file.name} (${file.type})`);
     if (file.data && file.data.length > 0) {
+      // 按 sheet 类型智能提取
+      const fileName = file.name.toLowerCase();
+      
       file.data.forEach((row, idx) => {
-        if (idx < 3) console.log(`行 ${idx}:`, row);
+        if (!row || typeof row !== 'object') return;
+        
         Object.keys(row).forEach(key => {
           const val = parseFloat(row[key]);
-          if (!isNaN(val) && val > 0) {
-            const k = key.toLowerCase().trim();
-            
-            // 更灵活的字段匹配
-            if (k.includes('cash') || k.includes('现金') || k.includes('货币')) extractedData.cash = Math.max(extractedData.cash || 0, val);
-            else if (k.includes('receivable') || k.includes('应收')) extractedData.rec = Math.max(extractedData.rec || 0, val);
-            else if (k.includes('inventory') || k.includes('库存') || k.includes('存货')) extractedData.inv = Math.max(extractedData.inv || 0, val);
-            else if (k.includes('payable') || k.includes('应付')) extractedData.pay = Math.max(extractedData.pay || 0, val);
-            else if (k.includes('revenue') || k.includes('收入') || k.includes('销售') || k.includes('sales')) extractedData.rev = Math.max(extractedData.rev || 0, val);
-            else if (k.includes('cogs') || k.includes('cost') || k.includes('成本') || k.includes('cost of sales')) extractedData.cogs = Math.max(extractedData.cogs || 0, val);
-            else if (k.includes('opex') || k.includes('expense') || k.includes('费用') || k.includes('operating')) extractedData.opex = Math.max(extractedData.opex || 0, val);
-            else if (k.includes('loan') || k.includes('贷款')) extractedData.stl = Math.max(extractedData.stl || 0, val);
-            else if (k.includes('overdraft') || k.includes('透支')) extractedData.od = Math.max(extractedData.od || 0, val);
+          if (isNaN(val) || val <= 0) return;
+          
+          const k = key.toLowerCase().trim();
+          
+          // Bank Book 交易文件
+          if (fileName.includes('bank')) {
+            if (k.includes('balance') || k.includes('projected')) extractedData.cash = Math.max(extractedData.cash, val);
+            if (k.includes('in-flow') || k.includes('inflow') || k.includes('income')) extractedData.rev += val;
+            if (k.includes('out-flow') || k.includes('outflow')) extractedData.outflow += val;
+          }
+          // GL BS (Balance Sheet) 文件
+          else if (fileName.includes('gl') && fileName.includes('bs')) {
+            if (k.includes('cash') || k.includes('现金') || k.includes('bank')) extractedData.cash = Math.max(extractedData.cash, val);
+            if (k.includes('receivable') || k.includes('应收')) extractedData.rec = Math.max(extractedData.rec, val);
+            if (k.includes('payable') || k.includes('应付')) extractedData.pay = Math.max(extractedData.pay, val);
+          }
+          // 通用字段匹配
+          else {
+            if (k.includes('cash') || k.includes('现金') || k.includes('货币') || k.includes('balance')) extractedData.cash = Math.max(extractedData.cash, val);
+            if (k.includes('receivable') || k.includes('应收')) extractedData.rec = Math.max(extractedData.rec, val);
+            if (k.includes('payable') || k.includes('应付')) extractedData.pay = Math.max(extractedData.pay, val);
+            if (k.includes('revenue') || k.includes('收入') || k.includes('sales') || k.includes('in-flow') || k.includes('inflow')) extractedData.rev = Math.max(extractedData.rev, val);
           }
         });
       });
     }
   });
 
-  console.log('\n✅ 最终提取的数据:', extractedData);
+  console.log('\n✅ 提取的数据:', extractedData);
   
-  if (Object.keys(extractedData).length === 0) {
-    alert('⚠️ 未能从文件中提取数据\n\n请确保文件包含以下列之一:\n- Cash/现金\n- Revenue/收入\n- COGS/成本\n- Receivable/应收\n- Inventory/库存\n- Payable/应付\n\n请检查文件格式');
+  // 如果没有提取到任何数据
+  if (extractedData.cash === 0 && extractedData.rec === 0 && extractedData.rev === 0) {
+    alert('⚠️ 未能自动识别财务数据\n\n请尝试:\n1. 确保文件包含数字数据\n2. 或手动在下方表单中输入数据\n\n我已尝试查找:\n- Cash/现金/Balance\n- Revenue/收入/In-Flow\n- Receivable/应收\n- Payable/应付');
+    showPage('dashboard');
     return;
   }
 
-  if (extractedData.cash) document.getElementById('input-cash').value = extractedData.cash;
-  if (extractedData.rec) document.getElementById('input-rec').value = extractedData.rec;
-  if (extractedData.inv) document.getElementById('input-inv').value = extractedData.inv;
-  if (extractedData.pay) document.getElementById('input-pay').value = extractedData.pay;
-  if (extractedData.rev) document.getElementById('input-rev').value = extractedData.rev;
-  if (extractedData.cogs) document.getElementById('input-cogs').value = extractedData.cogs;
-  if (extractedData.opex) document.getElementById('input-opex').value = extractedData.opex;
-  if (extractedData.stl) document.getElementById('input-stl').value = extractedData.stl;
-  if (extractedData.od) document.getElementById('input-od').value = extractedData.od;
+  // 填充表单
+  if (extractedData.cash > 0) document.getElementById('input-cash').value = extractedData.cash;
+  if (extractedData.rec > 0) document.getElementById('input-rec').value = extractedData.rec;
+  if (extractedData.pay > 0) document.getElementById('input-pay').value = extractedData.pay;
+  if (extractedData.rev > 0) document.getElementById('input-rev').value = extractedData.rev;
+  if (extractedData.outflow > 0) document.getElementById('input-opex').value = extractedData.outflow;
 
   showPage('dashboard');
   setTimeout(() => calculateDashboard(), 100);
