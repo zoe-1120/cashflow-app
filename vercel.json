@@ -1,9 +1,5 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/index_home.html" },
-    { "source": "/boss", "destination": "/index.html" },
-    { "source": "/import", "destination": "/import.html" },
-    { "source": "/monitor", "destination": "/monitor.html" },
-    { "source": "/dashboard", "destination": "/index.html" }
-  ]
+  "buildCommand": "exit 0",
+  "outputDirectory": ".",
+  "public": true
 }
