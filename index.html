@@ -51,6 +51,7 @@
       cursor: pointer;
       font-size: 12px;
       transition: all 0.3s;
+      font-weight: 700;
     }
     .nav-btn:hover {
       background: var(--gold);
@@ -89,6 +90,7 @@
       padding: 30px;
       cursor: pointer;
       transition: all 0.3s;
+      text-align: center;
     }
     .home-card:hover {
       border-color: var(--gold);
@@ -134,6 +136,9 @@
       transition: all 0.3s;
       margin-bottom: 12px;
     }
+    .drop-zone:hover {
+      border-color: var(--gold);
+    }
     .drop-zone.hover {
       border-color: var(--gold);
       background: #002a35;
@@ -162,6 +167,7 @@
       font-size: 12px;
       color: var(--muted);
       display: none;
+      line-height: 1.6;
     }
     .result-box.success {
       border-color: var(--green);
@@ -187,9 +193,9 @@
 <div class="header">
   <div class="logo">💰 现金流诊断平台</div>
   <div class="nav-buttons">
-    <button class="nav-btn active" onclick="showPage('home')">🏠 首页</button>
-    <button class="nav-btn" onclick="showPage('import')">📥 导入数据</button>
-    <button class="nav-btn" onclick="showPage('dashboard')">📊 Dashboard</button>
+    <button class="nav-btn active" id="btn-home">🏠 首页</button>
+    <button class="nav-btn" id="btn-import">📥 导入数据</button>
+    <button class="nav-btn" id="btn-dashboard">📊 Dashboard</button>
   </div>
 </div>
 
@@ -198,12 +204,12 @@
   <div id="home" class="page active">
     <h2 style="color: var(--gold); margin-bottom: 20px;">选择功能</h2>
     <div class="home-grid">
-      <div class="home-card" onclick="showPage('import')">
+      <div class="home-card" id="card-import">
         <div class="home-icon">📥</div>
         <div class="home-title">导入财务数据</div>
         <div class="home-desc">上传 Excel / CSV / PDF 文件，自动解析财务数据，智能识别关键字段</div>
       </div>
-      <div class="home-card" onclick="showPage('dashboard')">
+      <div class="home-card" id="card-dashboard">
         <div class="home-icon">📊</div>
         <div class="home-title">Executive Dashboard</div>
         <div class="home-desc">7个分析标签页，全面诊断公司财务健康状况</div>
@@ -231,19 +237,54 @@
 
   <!-- DASHBOARD PAGE -->
   <div id="dashboard" class="page">
-    <iframe src="dashboard.html" style="width: 100%; height: 100vh; border: none;"></iframe>
+    <div style="text-align: center; padding: 40px; color: var(--gold);">
+      <p style="font-size: 24px; margin-bottom: 20px;">📊 Executive Dashboard</p>
+      <p style="color: var(--muted); margin-bottom: 20px;">在本地运行可以看完整的Dashboard</p>
+      <p style="color: var(--muted); font-size: 12px;">本地使用: ruby server.rb → http://localhost:3456/boss</p>
+    </div>
   </div>
 </div>
 
 <script>
 pdfjsWorker.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
+// PAGE NAVIGATION
+document.getElementById('btn-home').addEventListener('click', function() {
+  showPage('home');
+  updateNav('btn-home');
+});
+
+document.getElementById('btn-import').addEventListener('click', function() {
+  showPage('import');
+  updateNav('btn-import');
+});
+
+document.getElementById('btn-dashboard').addEventListener('click', function() {
+  showPage('dashboard');
+  updateNav('btn-dashboard');
+});
+
+// HOME PAGE CARDS
+document.getElementById('card-import').addEventListener('click', function() {
+  showPage('import');
+  updateNav('btn-import');
+});
+
+document.getElementById('card-dashboard').addEventListener('click', function() {
+  showPage('dashboard');
+  updateNav('btn-dashboard');
+});
+
 function showPage(pageName) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById(pageName).classList.add('active');
-  
+  const page = document.getElementById(pageName);
+  if (page) page.classList.add('active');
+}
+
+function updateNav(btnId) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+  const btn = document.getElementById(btnId);
+  if (btn) btn.classList.add('active');
 }
 
 // FILE UPLOAD
@@ -251,20 +292,25 @@ const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const resultBox = document.getElementById('result');
 
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  dropZone.classList.add('hover');
-});
-dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('hover');
-});
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('hover');
-  handleFile(e.dataTransfer.files[0]);
-});
-fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+if (dropZone) {
+  dropZone.addEventListener('click', function() { fileInput.click(); });
+  dropZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dropZone.classList.add('hover');
+  });
+  dropZone.addEventListener('dragleave', function() {
+    dropZone.classList.remove('hover');
+  });
+  dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropZone.classList.remove('hover');
+    handleFile(e.dataTransfer.files[0]);
+  });
+}
+
+if (fileInput) {
+  fileInput.addEventListener('change', function(e) { handleFile(e.target.files[0]); });
+}
 
 function handleFile(file) {
   if (!file) return;
@@ -279,20 +325,20 @@ function handleFile(file) {
   } else if (ext === 'txt') {
     parseTXT(file);
   } else {
-    showResult('📥 开始处理文件: ' + file.name, 'success');
+    showResult('✅ 开始处理文件: ' + file.name, 'success');
     parseText(file);
   }
 }
 
 function parseExcel(file) {
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = function(e) {
     try {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet);
-      showResult('✅ Excel 解析成功！ ' + json.length + ' 行数据。请前往 Dashboard 查看！', 'success');
+      showResult('✅ Excel 解析成功！' + json.length + ' 行数据。', 'success');
     } catch (err) {
       showResult('❌ Excel 解析失败：' + err.message, 'error');
     }
@@ -302,13 +348,15 @@ function parseExcel(file) {
 
 function parseCSV(file) {
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = function(e) {
     Papa.parse(e.target.result, {
       header: true,
-      complete: results => {
-        showResult('✅ CSV 解析成功！ ' + results.data.length + ' 行数据。请前往 Dashboard 查看！', 'success');
+      complete: function(results) {
+        showResult('✅ CSV 解析成功！' + results.data.length + ' 行数据。', 'success');
       },
-      error: err => showResult('❌ CSV 解析失败', 'error')
+      error: function(err) {
+        showResult('❌ CSV 解析失败', 'error');
+      }
     });
   };
   reader.readAsText(file);
@@ -316,54 +364,57 @@ function parseCSV(file) {
 
 function parsePDF(file) {
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = function(e) {
     const pdf = pdfjsLib.getDocument(new Uint8Array(e.target.result));
-    pdf.promise.then(doc => {
+    pdf.promise.then(function(doc) {
       let text = '';
       let pages = 0;
       
-      const processPage = pageNum => {
+      function processPage(pageNum) {
         if (pageNum > doc.numPages) {
-          showResult('✅ PDF 提取成功！共 ' + pages + ' 页。\n\n📋 提取的文本（前500字）：\n\n' + text.substring(0, 500) + (text.length > 500 ? '...' : '') + '\n\n请在 Dashboard 中查看详细数据！', 'success');
+          showResult('✅ PDF 提取成功！共 ' + pages + ' 页。提取的文本字数：' + text.length, 'success');
           return;
         }
         
-        doc.getPage(pageNum).then(page => {
-          page.getTextContent().then(content => {
-            text += content.items.map(item => item.str).join('') + '\n';
+        doc.getPage(pageNum).then(function(page) {
+          page.getTextContent().then(function(content) {
+            text += content.items.map(function(item) { return item.str; }).join('') + '\n';
             pages++;
             processPage(pageNum + 1);
           });
         });
-      };
+      }
       
       processPage(1);
-    }).catch(err => showResult('❌ PDF 解析失败：' + err.message, 'error'));
+    }).catch(function(err) {
+      showResult('❌ PDF 解析失败：' + err.message, 'error');
+    });
   };
   reader.readAsArrayBuffer(file);
 }
 
 function parseTXT(file) {
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = function(e) {
     const text = e.target.result;
-    showResult('✅ 文本文件读取成功！\n\n📋 内容（前500字）：\n\n' + text.substring(0, 500) + (text.length > 500 ? '...' : '') + '\n\n请在 Dashboard 中查看数据！', 'success');
+    showResult('✅ 文本文件读取成功！字数：' + text.length, 'success');
   };
   reader.readAsText(file);
 }
 
 function parseText(file) {
   const reader = new FileReader();
-  reader.onload = e => {
-    const text = e.target.result;
-    showResult('✅ 文件读取成功！请在 Dashboard 中使用数据。', 'success');
+  reader.onload = function(e) {
+    showResult('✅ 文件读取成功！', 'success');
   };
-  reader.readAsText(file).catch(() => reader.readAsArrayBuffer(file));
+  reader.readAsText(file);
 }
 
-function showResult(msg, type = 'error') {
-  resultBox.textContent = msg;
-  resultBox.className = 'result-box ' + type;
+function showResult(msg, type) {
+  if (resultBox) {
+    resultBox.textContent = msg;
+    resultBox.className = 'result-box ' + type;
+  }
 }
 </script>
 
