@@ -349,6 +349,9 @@ function showAnalysis() {
         <tr><td><strong>Net Change</strong></td><td style="text-align: right; color: ${(totalIn-totalOut)>=0?'var(--green)':'var(--red)'}; font-weight: bold;">¥${(totalIn-totalOut).toFixed(2)}</strong></td></tr>
         <tr><td>Transactions</td><td style="text-align: right;">${csvData.length}</td></tr>
       </table>
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn" style="background: var(--green); color: #000; padding: 15px 40px; font-size: 14px;" onclick="alert('✅ Data loaded! CSV analysis complete.')">📊 Enter</button>
+      </div>
     </div>
   `;
   document.getElementById('analysisResult').innerHTML = html;
