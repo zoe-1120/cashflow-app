@@ -94,9 +94,9 @@
     <h2 style="color: var(--gold); margin-bottom: 20px;">📥 导入财务数据</h2>
     <div class="upload-box" id="dropZone">
       <p style="font-size: 20px; font-weight: bold;">📤 拖放文件夹/文件到此</p>
-      <p>或点击选择文件夹</p>
-      <p style="font-size: 11px; margin-top: 10px; color: var(--green);">💡 支持: Excel · CSV · PDF · PNG</p>
-      <input type="file" id="fileInput" multiple webkitdirectory mozdirectory onchange="handleFileInput(this)">
+      <p>或点击选择文件</p>
+      <p style="font-size: 11px; margin-top: 10px; color: var(--green);">💡 支持: Excel · CSV · PDF · PNG (可多选)</p>
+      <input type="file" id="fileInput" multiple accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg" onchange="handleFileInput(this)">
     </div>
     <div class="result" id="result"></div>
     <div class="file-list" id="fileList"></div>
