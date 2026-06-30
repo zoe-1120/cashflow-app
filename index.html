@@ -299,15 +299,34 @@ function handleFile(file) {
     reader.onload = e => {
       try {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet);
-        uploadedFiles.push({name: file.name, type: 'excel', data: json});
-        item.innerHTML = '<strong>📊 ' + file.name + '</strong> ✅ ' + json.length + ' 行';
+        const workbook = XLSX.read(data, { type: 'array', defval: "" });
+        console.log('📊 Excel 工作簿 sheets:', workbook.SheetNames);
+        
+        let allData = [];
+        // 扫描所有 sheet
+        workbook.SheetNames.forEach(sheetName => {
+          const sheet = workbook.Sheets[sheetName];
+          const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+          console.log(`📋 Sheet: ${sheetName}, 行数: ${json.length}`);
+          if (json.length > 0) {
+            console.log('列名:', Object.keys(json[0]));
+            allData = allData.concat(json);
+          }
+        });
+        
+        if (allData.length === 0) {
+          item.innerHTML = '<strong>📊 ' + file.name + '</strong> ⚠️ 未找到数据';
+          fileList.appendChild(item);
+          return;
+        }
+        
+        uploadedFiles.push({name: file.name, type: 'excel', data: allData});
+        item.innerHTML = '<strong>📊 ' + file.name + '</strong> ✅ ' + allData.length + ' 行';
         fileList.appendChild(item);
         updateResult();
       } catch (err) {
-        item.innerHTML = '<strong>📊 ' + file.name + '</strong> ❌ 解析失败';
+        console.error('Excel 解析错误:', err);
+        item.innerHTML = '<strong>📊 ' + file.name + '</strong> ❌ 解析失败: ' + err.message;
         fileList.appendChild(item);
       }
     };
