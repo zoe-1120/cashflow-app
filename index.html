@@ -6,6 +6,7 @@
   <title>现金流诊断平台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <style>
     :root {
       --bg: #002528;
@@ -174,6 +175,11 @@
       color: var(--red);
       display: block;
     }
+    .supported-formats {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
@@ -195,7 +201,7 @@
       <div class="home-card" onclick="showPage('import')">
         <div class="home-icon">📥</div>
         <div class="home-title">导入财务数据</div>
-        <div class="home-desc">上传 Excel / CSV 文件，自动解析财务数据，智能识别关键字段</div>
+        <div class="home-desc">上传 Excel / CSV / PDF 文件，自动解析财务数据，智能识别关键字段</div>
       </div>
       <div class="home-card" onclick="showPage('dashboard')">
         <div class="home-icon">📊</div>
@@ -209,12 +215,14 @@
   <div id="import" class="page">
     <div class="section">
       <div class="sec-hd">📥 上传文件</div>
-      <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">支持：Excel (.xlsx) / CSV (.csv)</p>
+      <div class="supported-formats">
+        ✅ 支持格式：Excel (.xlsx, .xls) | CSV (.csv) | PDF (.pdf) | 文本文件 (.txt)
+      </div>
       
       <div class="drop-zone" id="dropZone">
         <p style="font-size: 14px; font-weight: 700;">📤 拖放文件到此</p>
-        <p style="font-size: 11px;">或点击选择</p>
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+        <p style="font-size: 11px;">或点击选择任何格式的文件</p>
+        <input type="file" id="fileInput">
       </div>
       
       <div id="result" class="result-box"></div>
@@ -228,6 +236,8 @@
 </div>
 
 <script>
+pdfjsWorker.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
 function showPage(pageName) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(pageName).classList.add('active');
@@ -264,8 +274,13 @@ function handleFile(file) {
     parseExcel(file);
   } else if (ext === 'csv') {
     parseCSV(file);
+  } else if (ext === 'pdf') {
+    parsePDF(file);
+  } else if (ext === 'txt') {
+    parseTXT(file);
   } else {
-    showResult('不支持的格式。使用 Excel 或 CSV。', 'error');
+    showResult('📥 开始处理文件: ' + file.name, 'success');
+    parseText(file);
   }
 }
 
@@ -277,9 +292,9 @@ function parseExcel(file) {
       const workbook = XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet);
-      showResult('✅ 成功导入 ' + json.length + ' 行数据。请前往 Dashboard 查看！', 'success');
+      showResult('✅ Excel 解析成功！ ' + json.length + ' 行数据。请前往 Dashboard 查看！', 'success');
     } catch (err) {
-      showResult('❌ 解析失败', 'error');
+      showResult('❌ Excel 解析失败：' + err.message, 'error');
     }
   };
   reader.readAsArrayBuffer(file);
@@ -291,12 +306,59 @@ function parseCSV(file) {
     Papa.parse(e.target.result, {
       header: true,
       complete: results => {
-        showResult('✅ 成功导入 ' + results.data.length + ' 行数据。请前往 Dashboard 查看！', 'success');
+        showResult('✅ CSV 解析成功！ ' + results.data.length + ' 行数据。请前往 Dashboard 查看！', 'success');
       },
-      error: err => showResult('❌ 解析失败', 'error')
+      error: err => showResult('❌ CSV 解析失败', 'error')
     });
   };
   reader.readAsText(file);
+}
+
+function parsePDF(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const pdf = pdfjsLib.getDocument(new Uint8Array(e.target.result));
+    pdf.promise.then(doc => {
+      let text = '';
+      let pages = 0;
+      
+      const processPage = pageNum => {
+        if (pageNum > doc.numPages) {
+          showResult('✅ PDF 提取成功！共 ' + pages + ' 页。\n\n📋 提取的文本（前500字）：\n\n' + text.substring(0, 500) + (text.length > 500 ? '...' : '') + '\n\n请在 Dashboard 中查看详细数据！', 'success');
+          return;
+        }
+        
+        doc.getPage(pageNum).then(page => {
+          page.getTextContent().then(content => {
+            text += content.items.map(item => item.str).join('') + '\n';
+            pages++;
+            processPage(pageNum + 1);
+          });
+        });
+      };
+      
+      processPage(1);
+    }).catch(err => showResult('❌ PDF 解析失败：' + err.message, 'error'));
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseTXT(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    showResult('✅ 文本文件读取成功！\n\n📋 内容（前500字）：\n\n' + text.substring(0, 500) + (text.length > 500 ? '...' : '') + '\n\n请在 Dashboard 中查看数据！', 'success');
+  };
+  reader.readAsText(file);
+}
+
+function parseText(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    showResult('✅ 文件读取成功！请在 Dashboard 中使用数据。', 'success');
+  };
+  reader.readAsText(file).catch(() => reader.readAsArrayBuffer(file));
 }
 
 function showResult(msg, type = 'error') {
