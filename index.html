@@ -3,32 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>导入数据</title>
+  <title>现金流诊断平台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
+    :root {
+      --bg: #002528;
+      --card: #003330;
+      --gold: #b09b7b;
+      --text: #e8e0d4;
+      --muted: #9a9080;
+      --border: #005050;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #002528;
-      color: #e8e0d4;
+      background: var(--bg);
+      color: var(--text);
       font-family: Arial, sans-serif;
+    }
+    .header {
+      background: linear-gradient(135deg, #001a1c, #002528);
+      border-bottom: 2px solid var(--gold);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo { font-size: 13px; font-weight: 700; color: var(--gold); }
+    .tabs {
+      display: flex;
+      background: #001e22;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      padding: 10px 18px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      color: var(--muted);
+      font-size: 12px;
+      transition: all 0.15s;
+      border: none;
+      background: none;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
       padding: 20px;
     }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: #003330;
-      border: 1px solid #005050;
-      border-radius: 10px;
-      padding: 30px;
+    .page {
+      display: none;
     }
-    h1 {
-      color: #b09b7b;
-      margin-bottom: 20px;
-      text-align: center;
+    .page.active {
+      display: block;
     }
     .upload-box {
-      border: 2px dashed #005050;
+      border: 2px dashed var(--border);
       border-radius: 8px;
       padding: 40px;
       text-align: center;
@@ -37,31 +68,11 @@
       margin-bottom: 20px;
     }
     .upload-box:hover {
-      border-color: #b09b7b;
+      border-color: var(--gold);
       background: #002a35;
     }
-    .upload-box p {
-      margin: 10px 0;
-      color: #9a9080;
-    }
-    input[type="file"] {
-      display: none;
-    }
-    .button {
-      display: inline-block;
-      padding: 12px 24px;
-      background: #b09b7b;
-      color: #001a1c;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 14px;
-      margin-top: 10px;
-    }
-    .button:hover {
-      background: #c9a96e;
-    }
+    .upload-box p { margin: 10px 0; color: var(--muted); }
+    input[type="file"] { display: none; }
     .result {
       margin-top: 20px;
       padding: 15px;
@@ -74,90 +85,107 @@
       color: #4dbf91;
       display: block;
     }
-    .result.error {
-      background: #1a0505;
-      border: 1px solid #e05c5c;
-      color: #e05c5c;
-      display: block;
-    }
   </style>
 </head>
 <body>
 
+<div class="header">
+  <div class="logo">💰 现金流诊断平台</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showPage('upload')">📥 导入数据</button>
+  <button class="tab" onclick="showPage('dashboard')">📊 Executive Dashboard</button>
+</div>
+
 <div class="container">
-  <h1>📥 导入财务数据</h1>
-  
-  <div class="upload-box" onclick="document.getElementById('fileInput').click();">
-    <p style="font-size: 18px; font-weight: bold;">拖放文件到此</p>
-    <p>或点击选择文件</p>
-    <p style="font-size: 12px; margin-top: 15px;">支持：Excel (.xlsx) | CSV (.csv) | PDF (.pdf)</p>
-    <input type="file" id="fileInput" onchange="handleFile(this.files[0])">
+  <!-- UPLOAD PAGE -->
+  <div id="upload" class="page active">
+    <h2 style="color: var(--gold); margin-bottom: 20px;">📥 导入财务数据</h2>
+    
+    <div class="upload-box" id="dropZone">
+      <p style="font-size: 18px; font-weight: bold;">拖放文件到此</p>
+      <p>或点击选择文件</p>
+      <p style="font-size: 12px; margin-top: 15px;">支持：Excel (.xlsx) | CSV (.csv) | PDF (.pdf)</p>
+      <input type="file" id="fileInput" onchange="handleFile(this.files[0])">
+    </div>
+    
+    <div class="result" id="result"></div>
   </div>
-  
-  <div class="result" id="result"></div>
-  
-  <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #9a9080;">
-    <p>✅ 文件已上传并处理</p>
-    <p>📊 前往本地 Dashboard 查看详细分析</p>
-    <p style="margin-top: 10px;">本地使用: ruby server.rb → http://localhost:3456/boss</p>
+
+  <!-- DASHBOARD PAGE -->
+  <div id="dashboard" class="page">
+    <h2 style="color: var(--gold); margin-bottom: 20px;">📊 Executive Dashboard</h2>
+    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 30px; text-align: center;">
+      <p style="color: var(--gold); font-size: 16px; margin-bottom: 15px;">Executive Diagnostic Dashboard</p>
+      <p style="color: var(--muted); margin-bottom: 15px;">7个分析标签页 | 多年数据对比 | 完整财务诊断</p>
+      <p style="color: var(--gold); font-weight: bold; margin: 20px 0;">本地使用完整版本</p>
+      <p style="font-size: 12px; color: var(--muted);">
+        运行: <code style="background: #001a20; padding: 5px 10px; border-radius: 4px;">ruby server.rb</code>
+      </p>
+      <p style="font-size: 12px; color: var(--muted); margin-top: 10px;">
+        打开: <code style="background: #001a20; padding: 5px 10px; border-radius: 4px;">http://localhost:3456/boss</code>
+      </p>
+    </div>
   </div>
 </div>
 
 <script>
-// 拖放功能
-const container = document.querySelector('.upload-box');
+function showPage(pageName) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageName).classList.add('active');
+  
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+}
 
-container.addEventListener('dragover', function(e) {
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const result = document.getElementById('result');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => {
   e.preventDefault();
-  container.style.borderColor = '#b09b7b';
-  container.style.background = '#002a35';
+  dropZone.style.borderColor = '#b09b7b';
+  dropZone.style.background = '#002a35';
 });
-
-container.addEventListener('dragleave', function() {
-  container.style.borderColor = '#005050';
-  container.style.background = '#001a20';
+dropZone.addEventListener('dragleave', () => {
+  dropZone.style.borderColor = '#005050';
+  dropZone.style.background = '#001a20';
 });
-
-container.addEventListener('drop', function(e) {
+dropZone.addEventListener('drop', e => {
   e.preventDefault();
-  container.style.borderColor = '#005050';
-  container.style.background = '#001a20';
+  dropZone.style.borderColor = '#005050';
+  dropZone.style.background = '#001a20';
   handleFile(e.dataTransfer.files[0]);
 });
 
 function handleFile(file) {
   if (!file) return;
-  
   const ext = file.name.split('.').pop().toLowerCase();
-  const result = document.getElementById('result');
   
   if (ext === 'xlsx' || ext === 'xls') {
     parseExcel(file);
   } else if (ext === 'csv') {
     parseCSV(file);
-  } else if (ext === 'pdf') {
-    result.className = 'result success';
-    result.innerHTML = '✅ PDF 文件已上传！<br>请前往本地 Dashboard 查看详细分析。';
   } else {
     result.className = 'result success';
-    result.innerHTML = '✅ 文件已上传！<br>请前往本地 Dashboard 查看详细分析。';
+    result.innerHTML = '✅ 文件 ' + file.name + ' 已上传！';
   }
 }
 
 function parseExcel(file) {
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = e => {
     try {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet);
-      
-      const result = document.getElementById('result');
       result.className = 'result success';
-      result.innerHTML = '✅ Excel 解析成功！<br>' + json.length + ' 行数据已导入。<br>请前往本地 Dashboard 查看。';
+      result.innerHTML = '✅ ' + file.name + ' 解析成功！' + json.length + ' 行数据';
     } catch (err) {
-      showError('Excel 解析失败');
+      showError('解析失败');
     }
   };
   reader.readAsArrayBuffer(file);
@@ -165,13 +193,12 @@ function parseExcel(file) {
 
 function parseCSV(file) {
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = e => {
     Papa.parse(e.target.result, {
       header: true,
-      complete: function(results) {
-        const result = document.getElementById('result');
+      complete: results => {
         result.className = 'result success';
-        result.innerHTML = '✅ CSV 解析成功！<br>' + results.data.length + ' 行数据已导入。<br>请前往本地 Dashboard 查看。';
+        result.innerHTML = '✅ ' + file.name + ' 解析成功！' + results.data.length + ' 行数据';
       }
     });
   };
@@ -179,9 +206,12 @@ function parseCSV(file) {
 }
 
 function showError(msg) {
-  const result = document.getElementById('result');
-  result.className = 'result error';
-  result.innerHTML = '❌ ' + msg;
+  result.textContent = '❌ ' + msg;
+  result.className = 'result';
+  result.style.background = '#1a0505';
+  result.style.borderColor = '#e05c5c';
+  result.style.color = '#e05c5c';
+  result.style.display = 'block';
 }
 </script>
 
