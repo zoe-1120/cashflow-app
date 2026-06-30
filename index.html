@@ -342,26 +342,41 @@ function processAndEnter() {
     return;
   }
 
+  console.log('📁 上传的文件:', uploadedFiles);
   let extractedData = {};
+
   uploadedFiles.forEach(file => {
-    if (file.data) {
-      file.data.forEach(row => {
+    console.log(`\n📄 处理文件: ${file.name} (${file.type})`);
+    if (file.data && file.data.length > 0) {
+      file.data.forEach((row, idx) => {
+        if (idx < 3) console.log(`行 ${idx}:`, row);
         Object.keys(row).forEach(key => {
-          const val = parseFloat(row[key]) || 0;
-          const k = key.toLowerCase();
-          if (k.includes('cash') || k.includes('现金')) extractedData.cash = extractedData.cash || val;
-          else if (k.includes('receivable') || k.includes('应收')) extractedData.rec = extractedData.rec || val;
-          else if (k.includes('inventory') || k.includes('库存')) extractedData.inv = extractedData.inv || val;
-          else if (k.includes('payable') || k.includes('应付')) extractedData.pay = extractedData.pay || val;
-          else if (k.includes('revenue') || k.includes('收入') || k.includes('sales')) extractedData.rev = extractedData.rev || val;
-          else if (k.includes('cogs') || k.includes('cost') || k.includes('成本')) extractedData.cogs = extractedData.cogs || val;
-          else if (k.includes('opex') || k.includes('expense') || k.includes('费用')) extractedData.opex = extractedData.opex || val;
-          else if (k.includes('loan') || k.includes('贷款')) extractedData.stl = extractedData.stl || val;
-          else if (k.includes('overdraft') || k.includes('透支')) extractedData.od = extractedData.od || val;
+          const val = parseFloat(row[key]);
+          if (!isNaN(val) && val > 0) {
+            const k = key.toLowerCase().trim();
+            
+            // 更灵活的字段匹配
+            if (k.includes('cash') || k.includes('现金') || k.includes('货币')) extractedData.cash = Math.max(extractedData.cash || 0, val);
+            else if (k.includes('receivable') || k.includes('应收')) extractedData.rec = Math.max(extractedData.rec || 0, val);
+            else if (k.includes('inventory') || k.includes('库存') || k.includes('存货')) extractedData.inv = Math.max(extractedData.inv || 0, val);
+            else if (k.includes('payable') || k.includes('应付')) extractedData.pay = Math.max(extractedData.pay || 0, val);
+            else if (k.includes('revenue') || k.includes('收入') || k.includes('销售') || k.includes('sales')) extractedData.rev = Math.max(extractedData.rev || 0, val);
+            else if (k.includes('cogs') || k.includes('cost') || k.includes('成本') || k.includes('cost of sales')) extractedData.cogs = Math.max(extractedData.cogs || 0, val);
+            else if (k.includes('opex') || k.includes('expense') || k.includes('费用') || k.includes('operating')) extractedData.opex = Math.max(extractedData.opex || 0, val);
+            else if (k.includes('loan') || k.includes('贷款')) extractedData.stl = Math.max(extractedData.stl || 0, val);
+            else if (k.includes('overdraft') || k.includes('透支')) extractedData.od = Math.max(extractedData.od || 0, val);
+          }
         });
       });
     }
   });
+
+  console.log('\n✅ 最终提取的数据:', extractedData);
+  
+  if (Object.keys(extractedData).length === 0) {
+    alert('⚠️ 未能从文件中提取数据\n\n请确保文件包含以下列之一:\n- Cash/现金\n- Revenue/收入\n- COGS/成本\n- Receivable/应收\n- Inventory/库存\n- Payable/应付\n\n请检查文件格式');
+    return;
+  }
 
   if (extractedData.cash) document.getElementById('input-cash').value = extractedData.cash;
   if (extractedData.rec) document.getElementById('input-rec').value = extractedData.rec;
@@ -374,8 +389,9 @@ function processAndEnter() {
   if (extractedData.od) document.getElementById('input-od').value = extractedData.od;
 
   showPage('dashboard');
-  calculateDashboard();
+  setTimeout(() => calculateDashboard(), 100);
 }
+
 
 function calculateDashboard() {
   const cash = parseFloat(document.getElementById('input-cash').value) || 0;
