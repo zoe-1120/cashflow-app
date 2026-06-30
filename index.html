@@ -318,7 +318,13 @@ function handleFile(file) {
     Papa.parse(e.target.result, {
       header: true,
       complete: res => {
-        csvData = res.data.filter(row => (row.Date || row.date || row.DATE || row.日期) && (parseFloat(row.Amount || row.amount || 0) > 0));
+        csvData = res.data.filter(row => {
+        // Try to find any column that might be a date
+        let hasDate = Object.keys(row).some(key => key.toLowerCase().includes('date') || key.includes('日期'));
+        // Try to find any column with amount
+        let amount = Object.values(row).find(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0);
+        return hasDate && amount;
+      });
         const item = document.createElement('div');
         item.className = 'file-item';
         item.innerHTML = '<strong>' + file.name + '</strong> ✅ ' + csvData.length + ' rows';
