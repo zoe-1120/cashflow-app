@@ -332,7 +332,11 @@ function handleFile(file) {
 }
 
 function showAnalysis() {
-  if (csvData.length === 0) return;
+  if (csvData.length === 0) {
+    alert('❌ No data loaded. Check CSV format: Date,Description,Amount,Type');
+    return;
+  }
+  console.log('✅ showAnalysis called with', csvData.length, 'rows');
   let totalIn = 0, totalOut = 0;
   csvData.forEach(row => {
     const amt = parseFloat(row.Amount || 0);
