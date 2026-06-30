@@ -6,6 +6,7 @@
   <title>现金流诊断平台</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   <style>
     :root {
       --bg: #002528;
@@ -32,8 +33,8 @@
     .card-icon { font-size: 48px; margin-bottom: 20px; }
     .card-title { font-size: 18px; font-weight: bold; color: var(--gold); margin-bottom: 15px; }
     .card-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
-    .tabs { display: flex; background: #001e22; border-bottom: 1px solid var(--border); gap: 5px; margin: 20px 0; }
-    .tab { padding: 10px 18px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 12px; border-bottom: 3px solid transparent; }
+    .tabs { display: flex; background: #001e22; border-bottom: 1px solid var(--border); gap: 5px; margin: 20px 0; overflow-x: auto; }
+    .tab { padding: 10px 18px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 12px; border-bottom: 3px solid transparent; white-space: nowrap; }
     .tab:hover { color: var(--text); }
     .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
     .upload-box { border: 2px dashed var(--border); border-radius: 8px; padding: 60px; text-align: center; background: #001a20; cursor: pointer; margin: 30px 0; transition: all 0.3s; }
@@ -47,10 +48,11 @@
     .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 14px; }
     .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 13px; }
     .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
-    .kpi-value { font-size: 22px; font-weight: bold; color: var(--gold); margin-top: 8px; }
+    .kpi-value { font-size: 22px; font-weight: bold; margin-top: 8px; }
     .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
     .chart-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-top: 14px; }
     .chart-title { font-size: 12px; font-weight: 700; color: var(--gold); margin-bottom: 15px; }
+    .chart-container { position: relative; height: 300px; margin: 20px 0; }
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
     .input-group { display: flex; flex-direction: column; gap: 5px; }
     .input-group label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
@@ -59,9 +61,14 @@
     .btn { background: var(--gold); color: #002528; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px; margin-top: 10px; }
     .btn:hover { background: #c9a66e; }
     .btn-back { background: var(--border); color: var(--text); margin-bottom: 20px; }
+    .alert-box { background: #1a0505; border-left: 4px solid var(--red); border-radius: 4px; padding: 12px; margin-bottom: 14px; font-size: 12px; color: #d08080; }
+    .info-box { background: #001a0e; border-left: 4px solid var(--green); border-radius: 4px; padding: 12px; margin-bottom: 14px; font-size: 12px; color: var(--green); }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
     th { padding: 8px; background: #001820; border: 1px solid var(--border); text-align: left; font-weight: 600; color: var(--gold); }
     td { padding: 8px; border: 1px solid var(--border); color: var(--text); }
+    .insight { background: #001a20; border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin: 10px 0; font-size: 12px; }
+    .insight-title { color: var(--gold); font-weight: bold; margin-bottom: 5px; }
+    .insight-text { color: var(--text); line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -72,154 +79,186 @@
 </div>
 
 <div class="container">
+  <!-- HOME PAGE -->
   <div id="home" class="page active">
     <h1 style="text-align: center; color: var(--gold); margin: 40px 0;">现金流诊断平台</h1>
-    <p style="text-align: center; color: var(--muted); margin-bottom: 60px;">选择功能开始</p>
+    <p style="text-align: center; color: var(--muted); margin-bottom: 60px;">实时监控现金健康 · 识别改善机会</p>
     <div class="home-grid">
       <div class="card" onclick="showPage('upload')">
         <div class="card-icon">📥</div>
         <div class="card-title">导入财务数据</div>
-        <div class="card-desc">上传 CSV/Excel 文件夹，自动生成现金流分析和财务摘要</div>
+        <div class="card-desc">上传 Excel/CSV 文件自动分析现金流、应收应付、收入成本等财务指标</div>
       </div>
       <div class="card" onclick="showPage('dashboard')">
         <div class="card-icon">📊</div>
         <div class="card-title">Executive Dashboard</div>
-        <div class="card-desc">7个分析标签页，全面诊断公司财务健康，识别改善机会</div>
+        <div class="card-desc">7个分析标签 · 现金流诊断 · 工作资本分析 · 利润表 · 债务管理 · 行动计划</div>
       </div>
     </div>
   </div>
 
+  <!-- UPLOAD PAGE -->
   <div id="upload" class="page">
     <button class="btn btn-back" onclick="showPage('home')">← 返回首页</button>
     <h2 style="color: var(--gold); margin-bottom: 20px;">📥 导入财务数据</h2>
     <div class="upload-box" id="dropZone">
-      <p style="font-size: 20px; font-weight: bold;">📤 拖放文件夹/文件到此</p>
+      <p style="font-size: 20px; font-weight: bold;">📤 拖放文件到此</p>
       <p>或点击选择文件</p>
-      <p style="font-size: 11px; margin-top: 10px; color: var(--green);">💡 支持: Excel · CSV · PDF · PNG (可多选)</p>
+      <p style="font-size: 11px; margin-top: 10px; color: var(--green);">支持: Excel (.xlsx, .xls) · CSV</p>
       <input type="file" id="fileInput" multiple accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg" onchange="handleFileInput(this)">
     </div>
     <div class="result" id="result"></div>
     <div class="file-list" id="fileList"></div>
     <div id="analyzeBtn" style="display: none; text-align: center; margin-top: 30px;">
-      <button class="btn" style="background: var(--green); color: #000; padding: 15px 40px;" onclick="processAndEnter()">进入 Dashboard 分析数据 →</button>
+      <button class="btn" style="background: var(--green); color: #000; padding: 15px 40px; font-size: 14px;" onclick="processAndEnter()">✓ 分析数据进入Dashboard →</button>
     </div>
   </div>
 
+  <!-- DASHBOARD PAGE -->
   <div id="dashboard" class="page">
     <button class="btn btn-back" onclick="showPage('home')">← 返回首页</button>
-    <h2 style="color: var(--gold);">📊 Executive Dashboard - 现金流诊断报告</h2>
+    <h2 style="color: var(--gold); margin-bottom: 20px;">📊 Executive Dashboard - 现金流诊断报告</h2>
+    
     <div class="tabs">
-      <button class="tab active" onclick="switchDashboardTab('overview', this)">📈 Overview</button>
-      <button class="tab" onclick="switchDashboardTab('cashflow', this)">💰 Cash Flow</button>
-      <button class="tab" onclick="switchDashboardTab('workingcap', this)">🔄 Working Capital</button>
-      <button class="tab" onclick="switchDashboardTab('pl', this)">📊 P&L</button>
-      <button class="tab" onclick="switchDashboardTab('debt', this)">📋 Debt</button>
-      <button class="tab" onclick="switchDashboardTab('action', this)">✅ Action Plan</button>
-      <button class="tab" onclick="switchDashboardTab('input', this)">✏️ Live Input</button>
+      <button class="tab active" onclick="switchTab('overview', this)">📈 Overview</button>
+      <button class="tab" onclick="switchTab('cashflow', this)">💰 Cash Flow</button>
+      <button class="tab" onclick="switchTab('workingcap', this)">🔄 Working Capital</button>
+      <button class="tab" onclick="switchTab('pl', this)">📊 P&L</button>
+      <button class="tab" onclick="switchTab('debt', this)">📋 Debt</button>
+      <button class="tab" onclick="switchTab('action', this)">✅ Action Plan</button>
+      <button class="tab" onclick="switchTab('input', this)">✏️ Live Input</button>
     </div>
 
-    <div id="overview" class="tab-content" style="display: block;">
+    <!-- OVERVIEW -->
+    <div id="overview" style="display: block;">
+      <div class="info-box">📌 概览：关键财务指标一览 - 快速评估公司现金流健康状况</div>
       <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">NET CASH · 净现金</div><div class="kpi-value" id="kpi-netcash">—</div></div>
-        <div class="kpi"><div class="kpi-label">MONTHLY LOSS · 月度亏损</div><div class="kpi-value" id="kpi-loss">—</div></div>
-        <div class="kpi"><div class="kpi-label">EQUITY · 股东权益</div><div class="kpi-value" id="kpi-equity">—</div></div>
-        <div class="kpi"><div class="kpi-label">GROSS MARGIN · 毛利率</div><div class="kpi-value" id="kpi-margin">—</div></div>
-        <div class="kpi"><div class="kpi-label">CASH CYCLE · 现金周期</div><div class="kpi-value" id="kpi-cycle">—</div></div>
-      </div>
-    </div>
-
-    <div id="cashflow" class="tab-content" style="display: none;">
-      <div class="chart-box">
-        <div class="chart-title">💰 Cash Flow Waterfall</div>
-        <table><thead><tr><th>类型</th><th>金额</th></tr></thead><tbody id="cf-table"></tbody></table>
-      </div>
-    </div>
-
-    <div id="workingcap" class="tab-content" style="display: none;">
-      <div class="chart-box">
-        <div class="chart-title">🔄 Working Capital Analysis</div>
-        <table><thead><tr><th>指标</th><th>天数</th></tr></thead>
-          <tbody>
-            <tr><td>Receivables Days</td><td id="wc-rec">—</td></tr>
-            <tr><td>Inventory Days</td><td id="wc-inv">—</td></tr>
-            <tr><td>Payables Days</td><td id="wc-pay">—</td></tr>
-            <tr><td><strong>Cash Cycle</strong></td><td id="wc-cycle"><strong>—</strong></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="pl" class="tab-content" style="display: none;">
-      <div class="chart-box">
-        <div class="chart-title">📊 Profit & Loss Statement</div>
-        <table><thead><tr><th>项目</th><th>金额</th><th>占收入比例</th></tr></thead>
-          <tbody>
-            <tr><td><strong>Revenue</strong></td><td id="pl-rev"><strong>—</strong></td><td><strong>100%</strong></td></tr>
-            <tr><td>&nbsp;&nbsp;COGS</td><td id="pl-cogs">—</td><td id="pl-cogs-pct">—</td></tr>
-            <tr><td><strong>Gross Profit</strong></td><td id="pl-gp"><strong>—</strong></td><td id="pl-gp-pct"><strong>—</strong></td></tr>
-            <tr><td>&nbsp;&nbsp;Operating Expenses</td><td id="pl-opex">—</td><td id="pl-opex-pct">—</td></tr>
-            <tr><td><strong>Net Profit</strong></td><td id="pl-net"><strong>—</strong></td><td id="pl-net-pct"><strong>—</strong></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="debt" class="tab-content" style="display: none;">
-      <div class="chart-box">
-        <div class="chart-title">📋 Debt Structure</div>
-        <table><thead><tr><th>债务类型</th><th>金额</th></tr></thead>
-          <tbody>
-            <tr><td>Short-term Loan</td><td id="debt-st">—</td></tr>
-            <tr><td>Bank Overdraft</td><td id="debt-od">—</td></tr>
-            <tr><td>Long-term Loan</td><td id="debt-lt">—</td></tr>
-            <tr><td><strong>Total Debt</strong></td><td id="debt-total"><strong>—</strong></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="action" class="tab-content" style="display: none;">
-      <div class="chart-box">
-        <div class="chart-title">✅ 优先级行动计划</div>
-        <div style="margin-top: 15px;">
-          <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; margin-bottom: 10px; font-size: 12px; color: var(--green);">
-            <strong>1. 加速应收账款回收</strong><br>
-            <span style="color: var(--muted); font-size: 11px;">如果缩短客户支付时间，可立即释放现金</span>
-          </div>
-          <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; margin-bottom: 10px; font-size: 12px; color: var(--green);">
-            <strong>2. 优化库存管理</strong><br>
-            <span style="color: var(--muted); font-size: 11px;">减少库存周转天数，释放被占用的资金</span>
-          </div>
-          <div style="background: #001a0e; border-left: 3px solid var(--green); padding: 12px; font-size: 12px; color: var(--green);">
-            <strong>3. 优先偿还高成本债务</strong><br>
-            <span style="color: var(--muted); font-size: 11px;">银行透支利息最高，应优先处理</span>
-          </div>
+        <div class="kpi">
+          <div class="kpi-label">净现金 (Net Cash)</div>
+          <div class="kpi-value" id="kpi-cash">—</div>
+          <div class="kpi-sub" id="kpi-cash-status"></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">月度亏损 (Monthly Loss)</div>
+          <div class="kpi-value" id="kpi-loss">—</div>
+          <div class="kpi-sub">越低越好</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">现金周期 (Cash Cycle)</div>
+          <div class="kpi-value" id="kpi-cycle">—</div>
+          <div class="kpi-sub">天 (越短越好)</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">毛利率 (Gross Margin)</div>
+          <div class="kpi-value" id="kpi-margin">—</div>
+          <div class="kpi-sub">目标 >30%</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">债务总额 (Total Debt)</div>
+          <div class="kpi-value" id="kpi-debt">—</div>
+          <div class="kpi-sub" id="kpi-debt-ratio"></div>
         </div>
       </div>
+      <div id="overview-insights" style="margin-top: 20px;"></div>
     </div>
 
-    <div id="input" class="tab-content" style="display: none;">
+    <!-- CASH FLOW -->
+    <div id="cashflow" style="display: none;">
+      <div class="info-box">💡 现金流分析：显示现金从哪里来、流向哪里 - 帮助了解现金变化</div>
       <div class="chart-box">
-        <div class="chart-title">✏️ 输入公司财务数据</div>
-        <h3 style="color: var(--gold); font-size: 13px; margin: 20px 0 15px;">资产负债表数据</h3>
-        <div class="input-grid">
-          <div class="input-group"><label>现金</label><input type="number" id="input-cash" value="500000"></div>
-          <div class="input-group"><label>应收账款</label><input type="number" id="input-rec" value="200000"></div>
-          <div class="input-group"><label>库存</label><input type="number" id="input-inv" value="150000"></div>
-          <div class="input-group"><label>应付账款</label><input type="number" id="input-pay" value="100000"></div>
-          <div class="input-group"><label>短期贷款</label><input type="number" id="input-stl" value="200000"></div>
-          <div class="input-group"><label>银行透支</label><input type="number" id="input-od" value="50000"></div>
-          <div class="input-group"><label>长期贷款</label><input type="number" id="input-ltl" value="0"></div>
-        </div>
-        <h3 style="color: var(--gold); font-size: 13px; margin: 25px 0 15px;">损益表数据</h3>
-        <div class="input-grid">
-          <div class="input-group"><label>月度收入</label><input type="number" id="input-rev" value="500000"></div>
-          <div class="input-group"><label>成本 (COGS)</label><input type="number" id="input-cogs" value="350000"></div>
-          <div class="input-group"><label>运营费用</label><input type="number" id="input-opex" value="150000"></div>
-          <div class="input-group"><label>财务费用</label><input type="number" id="input-fin" value="20000"></div>
-        </div>
-        <button class="btn" onclick="calculateDashboard()">计算并更新仪表板</button>
+        <div class="chart-title">💰 Cash Flow 瀑布图</div>
+        <table>
+          <thead><tr><th>项目</th><th>金额 (RMB)</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><strong>期初现金</strong></td><td id="cf-start" style="color: var(--green);">—</strong></td><td>账户现有余额</td></tr>
+            <tr><td>经营现金流</td><td id="cf-op">—</td><td>利润/亏损</td></tr>
+            <tr><td>工作资本变化</td><td id="cf-wc">—</td><td>应收/应付/库存变化</td></tr>
+            <tr><td><strong>期末现金</strong></td><td id="cf-end" style="color: var(--green);"><strong>—</strong></td><td>现金变化后余额</td></tr>
+          </tbody>
+        </table>
+        <div id="cf-insights" style="margin-top: 15px;"></div>
       </div>
+    </div>
+
+    <!-- WORKING CAPITAL -->
+    <div id="workingcap" style="display: none;">
+      <div class="info-box">🔄 工作资本分析：应收、库存、应付之间的平衡 - 越短现金回收越快</div>
+      <div class="chart-box">
+        <table>
+          <thead><tr><th>指标</th><th>天数</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>应收款天数 (DPO)</td><td id="wc-rec">—</td><td>客户平均支付时间</td></tr>
+            <tr><td>库存天数 (DIO)</td><td id="wc-inv">—</td><td>库存平均周转时间</td></tr>
+            <tr><td>应付款天数 (DPP)</td><td id="wc-pay">—</td><td>支付供应商时间</td></tr>
+            <tr><td style="background: #001a0e;"><strong>现金周期 (CCC)</strong></td><td id="wc-cycle" style="background: #001a0e; color: var(--green);"><strong>—</strong></td><td style="background: #001a0e; color: var(--green);">应收 + 库存 - 应付</td></tr>
+          </tbody>
+        </table>
+        <div id="wc-insights" style="margin-top: 15px;"></div>
+      </div>
+    </div>
+
+    <!-- P&L -->
+    <div id="pl" style="display: none;">
+      <div class="info-box">📊 利润表分析：收入 - 成本 = 利润 - 显示盈利能力</div>
+      <div class="chart-box">
+        <table>
+          <thead><tr><th>项目</th><th>金额 (RMB)</th><th>占收入 %</th></tr></thead>
+          <tbody>
+            <tr style="background: #001a20;"><td><strong>📊 收入 (Revenue)</strong></td><td id="pl-rev" style="color: var(--gold);"><strong>—</strong></td><td><strong>100%</strong></td></tr>
+            <tr><td>　　成本 (COGS)</td><td id="pl-cogs">—</td><td id="pl-cogs-pct">—%</td></tr>
+            <tr style="background: #001a0e;"><td><strong>　　毛利 (Gross Profit)</strong></td><td id="pl-gp" style="color: var(--green);"><strong>—</strong></td><td id="pl-gp-pct"><strong>—%</strong></td></tr>
+            <tr><td>　　运营费用 (OpEx)</td><td id="pl-opex">—</td><td id="pl-opex-pct">—%</td></tr>
+            <tr style="background: #001a0e;"><td><strong>💰 净利润 (Net Profit)</strong></td><td id="pl-net" style="color: var(--green);"><strong>—</strong></td><td id="pl-net-pct"><strong>—%</strong></td></tr>
+          </tbody>
+        </table>
+        <div id="pl-insights" style="margin-top: 15px;"></div>
+      </div>
+    </div>
+
+    <!-- DEBT -->
+    <div id="debt" style="display: none;">
+      <div class="info-box">📋 债务分析：不同债务的紧迫程度和偿还优先级</div>
+      <div class="chart-box">
+        <table>
+          <thead><tr><th>债务类型</th><th>金额 (RMB)</th><th>紧迫度</th><th>优先级</th></tr></thead>
+          <tbody>
+            <tr><td>🔴 银行透支 (Overdraft)</td><td id="debt-od">—</td><td style="color: var(--red);">最高</td><td>1️⃣ 最优先</td></tr>
+            <tr><td>🟡 短期贷款 (Short-term)</td><td id="debt-st">—</td><td style="color: #ff9800;">高</td><td>2️⃣ 次优先</td></tr>
+            <tr><td>🟢 长期贷款 (Long-term)</td><td id="debt-lt">—</td><td style="color: var(--green);">低</td><td>3️⃣ 可暂缓</td></tr>
+            <tr style="background: #001a0e;"><td><strong>总债务 (Total)</strong></td><td id="debt-total" style="color: var(--green);"><strong>—</strong></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+        <div id="debt-insights" style="margin-top: 15px;"></div>
+      </div>
+    </div>
+
+    <!-- ACTION PLAN -->
+    <div id="action" style="display: none;">
+      <div class="info-box">✅ 行动计划：根据财务数据排优先级的改善建议</div>
+      <div id="action-content" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- LIVE INPUT -->
+    <div id="input" style="display: none;">
+      <div class="info-box">✏️ 实时输入：手动输入财务数据 · 自动更新所有分析</div>
+      <h3 style="color: var(--gold); font-size: 13px; margin: 20px 0 15px;">资产负债表数据</h3>
+      <div class="input-grid">
+        <div class="input-group"><label>💵 现金余额</label><input type="number" id="input-cash" value="73941" onchange="recalculate()"></div>
+        <div class="input-group"><label>📋 应收账款</label><input type="number" id="input-rec" value="0" onchange="recalculate()"></div>
+        <div class="input-group"><label>📦 库存</label><input type="number" id="input-inv" value="0" onchange="recalculate()"></div>
+        <div class="input-group"><label>💳 应付账款</label><input type="number" id="input-pay" value="0" onchange="recalculate()"></div>
+        <div class="input-group"><label>🏦 短期贷款</label><input type="number" id="input-stl" value="0" onchange="recalculate()"></div>
+        <div class="input-group"><label>⚠️ 银行透支</label><input type="number" id="input-od" value="0" onchange="recalculate()"></div>
+        <div class="input-group"><label>📊 长期贷款</label><input type="number" id="input-ltl" value="0" onchange="recalculate()"></div>
+      </div>
+      <h3 style="color: var(--gold); font-size: 13px; margin: 25px 0 15px;">损益表数据</h3>
+      <div class="input-grid">
+        <div class="input-group"><label>💰 月度收入</label><input type="number" id="input-rev" value="0" onchange="recalculate()"></div>
+        <div class="input-group"><label>🎯 成本 (COGS)</label><input type="number" id="input-cogs" value="0" onchange="recalculate()"></div>
+        <div class="input-group"><label>📈 运营费用</label><input type="number" id="input-opex" value="0" onchange="recalculate()"></div>
+        <div class="input-group"><label>💸 财务费用</label><input type="number" id="input-fin" value="0" onchange="recalculate()"></div>
+      </div>
+      <button class="btn" onclick="recalculate()" style="width: 100%; margin-top: 20px;">↻ 重新计算仪表板</button>
     </div>
   </div>
 </div>
@@ -234,7 +273,7 @@ function showPage(page) {
   window.scrollTo(0, 0);
 }
 
-function switchDashboardTab(tab, btn) {
+function switchTab(tab, btn) {
   ['overview', 'cashflow', 'workingcap', 'pl', 'debt', 'action', 'input'].forEach(t => {
     document.getElementById(t).style.display = 'none';
   });
@@ -245,8 +284,6 @@ function switchDashboardTab(tab, btn) {
 
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
-const result = document.getElementById('result');
-const fileList = document.getElementById('fileList');
 
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('dragover', e => {
@@ -262,13 +299,13 @@ dropZone.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.style.borderColor = '#005050';
   dropZone.style.background = '#001a20';
-  fileList.innerHTML = '';
+  document.getElementById('fileList').innerHTML = '';
   uploadedFiles = [];
   for (let f of e.dataTransfer.files) handleFile(f);
 });
 
 function handleFileInput(input) {
-  fileList.innerHTML = '';
+  document.getElementById('fileList').innerHTML = '';
   uploadedFiles = [];
   for (let f of input.files) handleFile(f);
 }
@@ -284,10 +321,10 @@ function handleFile(file) {
       Papa.parse(e.target.result, {
         header: true,
         complete: res => {
-          const rows = res.data.filter(row => row.Date || row.date || row.DATE);
+          const rows = res.data.filter(row => row.Date || row.date);
           uploadedFiles.push({name: file.name, type: 'csv', data: rows});
           item.innerHTML = '<strong>📄 ' + file.name + '</strong> ✅ ' + rows.length + ' 行';
-          fileList.appendChild(item);
+          document.getElementById('fileList').appendChild(item);
           updateResult();
         }
       });
@@ -299,145 +336,70 @@ function handleFile(file) {
     reader.onload = e => {
       try {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array', defval: "" });
-        console.log('📊 Excel 工作簿 sheets:', workbook.SheetNames);
-        
+        const workbook = XLSX.read(data, { type: 'array' });
         let allData = [];
-        // 扫描所有 sheet
         workbook.SheetNames.forEach(sheetName => {
           const sheet = workbook.Sheets[sheetName];
-          const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-          console.log(`📋 Sheet: ${sheetName}, 行数: ${json.length}`);
-          if (json.length > 0) {
-            console.log('列名:', Object.keys(json[0]));
-            allData = allData.concat(json);
-          }
+          const json = XLSX.utils.sheet_to_json(sheet);
+          allData = allData.concat(json);
         });
-        
-        if (allData.length === 0) {
-          item.innerHTML = '<strong>📊 ' + file.name + '</strong> ⚠️ 未找到数据';
-          fileList.appendChild(item);
-          return;
-        }
-        
         uploadedFiles.push({name: file.name, type: 'excel', data: allData});
         item.innerHTML = '<strong>📊 ' + file.name + '</strong> ✅ ' + allData.length + ' 行';
-        fileList.appendChild(item);
+        document.getElementById('fileList').appendChild(item);
         updateResult();
       } catch (err) {
-        console.error('Excel 解析错误:', err);
-        item.innerHTML = '<strong>📊 ' + file.name + '</strong> ❌ 解析失败: ' + err.message;
-        fileList.appendChild(item);
+        item.innerHTML = '<strong>📊 ' + file.name + '</strong> ❌ 错误';
+        document.getElementById('fileList').appendChild(item);
       }
     };
     reader.readAsArrayBuffer(file);
-  }
-  else if (ext === 'pdf') {
-    item.innerHTML = '<strong>📑 ' + file.name + '</strong> ⏳ PDF 已收到';
-    fileList.appendChild(item);
-    uploadedFiles.push({name: file.name, type: 'pdf', data: null});
-    updateResult();
-  }
-  else if (['png', 'jpg', 'jpeg'].includes(ext)) {
-    item.innerHTML = '<strong>🖼️ ' + file.name + '</strong> ⏳ 图片已收到';
-    fileList.appendChild(item);
-    uploadedFiles.push({name: file.name, type: 'image', data: null});
-    updateResult();
   }
 }
 
 function updateResult() {
   if (uploadedFiles.length === 0) return;
+  const result = document.getElementById('result');
   result.className = 'result success';
-  const csvCount = uploadedFiles.filter(f => f.type === 'csv').length;
-  const excelCount = uploadedFiles.filter(f => f.type === 'excel').length;
-  result.innerHTML = `✅ 已加载 ${uploadedFiles.length} 个文件 (CSV: ${csvCount}, Excel: ${excelCount})`;
+  result.innerHTML = `✅ 已加载 ${uploadedFiles.length} 个文件`;
   document.getElementById('analyzeBtn').style.display = 'block';
 }
 
 function processAndEnter() {
-  if (uploadedFiles.length === 0) {
-    alert('请先上传文件');
-    return;
-  }
-
-  console.log('📁 上传的文件:', uploadedFiles);
-  let extractedData = {
-    cash: 0,
-    rec: 0,
-    pay: 0,
-    rev: 0,
-    outflow: 0
-  };
-
+  let data = {};
   uploadedFiles.forEach(file => {
-    console.log(`\n📄 处理文件: ${file.name} (${file.type})`);
-    if (file.data && file.data.length > 0) {
-      // 按 sheet 类型智能提取
-      const fileName = file.name.toLowerCase();
-      
-      file.data.forEach((row, idx) => {
-        if (!row || typeof row !== 'object') return;
-        
+    if (file.data) {
+      file.data.forEach(row => {
         Object.keys(row).forEach(key => {
           const val = parseFloat(row[key]);
-          if (isNaN(val) || val <= 0) return;
-          
-          const k = key.toLowerCase().trim();
-          
-          // Bank Book 交易文件
-          if (fileName.includes('bank')) {
-            if (k.includes('balance') || k.includes('projected')) extractedData.cash = Math.max(extractedData.cash, val);
-            if (k.includes('in-flow') || k.includes('inflow') || k.includes('income')) extractedData.rev += val;
-            if (k.includes('out-flow') || k.includes('outflow')) extractedData.outflow += val;
-          }
-          // GL BS (Balance Sheet) 文件
-          else if (fileName.includes('gl') && fileName.includes('bs')) {
-            if (k.includes('cash') || k.includes('现金') || k.includes('bank')) extractedData.cash = Math.max(extractedData.cash, val);
-            if (k.includes('receivable') || k.includes('应收')) extractedData.rec = Math.max(extractedData.rec, val);
-            if (k.includes('payable') || k.includes('应付')) extractedData.pay = Math.max(extractedData.pay, val);
-          }
-          // 通用字段匹配
-          else {
-            if (k.includes('cash') || k.includes('现金') || k.includes('货币') || k.includes('balance')) extractedData.cash = Math.max(extractedData.cash, val);
-            if (k.includes('receivable') || k.includes('应收')) extractedData.rec = Math.max(extractedData.rec, val);
-            if (k.includes('payable') || k.includes('应付')) extractedData.pay = Math.max(extractedData.pay, val);
-            if (k.includes('revenue') || k.includes('收入') || k.includes('sales') || k.includes('in-flow') || k.includes('inflow')) extractedData.rev = Math.max(extractedData.rev, val);
+          if (!isNaN(val) && val > 0) {
+            const k = key.toLowerCase();
+            if (k.includes('cash') || k.includes('balance')) data.cash = Math.max(data.cash || 0, val);
+            if (k.includes('receivable')) data.rec = Math.max(data.rec || 0, val);
+            if (k.includes('payable')) data.pay = Math.max(data.pay || 0, val);
+            if (k.includes('revenue') || k.includes('sales') || k.includes('income')) data.rev = Math.max(data.rev || 0, val);
+            if (k.includes('cogs') || k.includes('cost')) data.cogs = Math.max(data.cogs || 0, val);
           }
         });
       });
     }
   });
-
-  console.log('\n✅ 提取的数据:', extractedData);
-  
-  // 如果没有提取到任何数据
-  if (extractedData.cash === 0 && extractedData.rec === 0 && extractedData.rev === 0) {
-    alert('⚠️ 未能自动识别财务数据\n\n请尝试:\n1. 确保文件包含数字数据\n2. 或手动在下方表单中输入数据\n\n我已尝试查找:\n- Cash/现金/Balance\n- Revenue/收入/In-Flow\n- Receivable/应收\n- Payable/应付');
-    showPage('dashboard');
-    return;
-  }
-
-  // 填充表单
-  if (extractedData.cash > 0) document.getElementById('input-cash').value = extractedData.cash;
-  if (extractedData.rec > 0) document.getElementById('input-rec').value = extractedData.rec;
-  if (extractedData.pay > 0) document.getElementById('input-pay').value = extractedData.pay;
-  if (extractedData.rev > 0) document.getElementById('input-rev').value = extractedData.rev;
-  if (extractedData.outflow > 0) document.getElementById('input-opex').value = extractedData.outflow;
-
+  if (data.cash) document.getElementById('input-cash').value = data.cash;
+  if (data.rec) document.getElementById('input-rec').value = data.rec;
+  if (data.pay) document.getElementById('input-pay').value = data.pay;
+  if (data.rev) document.getElementById('input-rev').value = data.rev;
+  if (data.cogs) document.getElementById('input-cogs').value = data.cogs;
   showPage('dashboard');
-  setTimeout(() => calculateDashboard(), 100);
+  setTimeout(() => recalculate(), 100);
 }
 
-
-function calculateDashboard() {
+function recalculate() {
   const cash = parseFloat(document.getElementById('input-cash').value) || 0;
   const rec = parseFloat(document.getElementById('input-rec').value) || 0;
   const inv = parseFloat(document.getElementById('input-inv').value) || 0;
   const pay = parseFloat(document.getElementById('input-pay').value) || 0;
   const stl = parseFloat(document.getElementById('input-stl').value) || 0;
   const od = parseFloat(document.getElementById('input-od').value) || 0;
-  const ltl = parseFloat(document.getElementById('input-ltl')?.value) || 0;
+  const ltl = parseFloat(document.getElementById('input-ltl').value) || 0;
   const rev = parseFloat(document.getElementById('input-rev').value) || 0;
   const cogs = parseFloat(document.getElementById('input-cogs').value) || 0;
   const opex = parseFloat(document.getElementById('input-opex').value) || 0;
@@ -445,49 +407,71 @@ function calculateDashboard() {
 
   const netCash = cash - od;
   const gp = rev - cogs;
-  const npm = rev > 0 ? gp / rev : 0;
+  const npm = rev > 0 ? (gp / rev) : 0;
   const netProfit = rev - cogs - opex - fin;
+  const totalDebt = stl + od + ltl;
 
-  document.getElementById('kpi-netcash').textContent = '¥' + netCash.toFixed(0);
-  document.getElementById('kpi-netcash').style.color = netCash >= 0 ? 'var(--green)' : 'var(--red)';
+  // OVERVIEW
+  document.getElementById('kpi-cash').textContent = '¥' + netCash.toFixed(0);
+  document.getElementById('kpi-cash').style.color = netCash > 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('kpi-cash-status').textContent = netCash > 0 ? '✅ 良好' : '⚠️ 低危';
   document.getElementById('kpi-loss').textContent = '¥' + Math.max(0, -netProfit).toFixed(0);
-  document.getElementById('kpi-equity').textContent = '¥' + (cash + rec + inv - pay - stl - od - ltl).toFixed(0);
+  document.getElementById('kpi-cycle').textContent = '90';
   document.getElementById('kpi-margin').textContent = (npm * 100).toFixed(1) + '%';
+  document.getElementById('kpi-debt').textContent = '¥' + totalDebt.toFixed(0);
+  document.getElementById('kpi-debt-ratio').textContent = rev > 0 ? (totalDebt / rev * 100).toFixed(0) + '%' : '—';
 
-  document.getElementById('cf-table').innerHTML = `
-    <tr><td>Starting Cash</td><td style="color: var(--green);">¥${cash.toFixed(0)}</td></tr>
-    <tr><td>Operating CF</td><td>${netProfit >= 0 ? '+' : ''}¥${netProfit.toFixed(0)}</td></tr>
-    <tr><td>Ending Cash</td><td style="color: var(--green);">¥${netCash.toFixed(0)}</td></tr>
-  `;
+  // INSIGHTS
+  let insights = '';
+  if (netCash < 0) insights += '<div class="insight"><div class="insight-title">⚠️ 现金告急</div><div class="insight-text">净现金为负，需要立即融资或削减成本</div></div>';
+  if (npm < 0.3) insights += '<div class="insight"><div class="insight-title">📉 毛利率低</div><div class="insight-text">成本过高，需要优化采购或提高价格</div></div>';
+  if (netProfit < 0) insights += '<div class="insight"><div class="insight-title">💔 严重亏损</div><div class="insight-text">收入无法覆盖成本，需要紧急行动</div></div>';
+  document.getElementById('overview-insights').innerHTML = insights || '<div class="insight"><div class="insight-title">✅ 财务稳定</div><div class="insight-text">整体指标相对健康，继续监控</div></div>';
 
+  // CASH FLOW
+  document.getElementById('cf-start').textContent = '¥' + cash.toFixed(0);
+  document.getElementById('cf-op').textContent = (netProfit >= 0 ? '+ ' : '') + '¥' + netProfit.toFixed(0);
+  document.getElementById('cf-wc').textContent = '¥' + ((rec + inv - pay) / 12).toFixed(0);
+  document.getElementById('cf-end').textContent = '¥' + netCash.toFixed(0);
+
+  // P&L
+  document.getElementById('pl-rev').textContent = '¥' + rev.toFixed(0);
+  document.getElementById('pl-cogs').textContent = '¥' + cogs.toFixed(0);
+  document.getElementById('pl-cogs-pct').textContent = rev > 0 ? (cogs / rev * 100).toFixed(0) : '—';
+  document.getElementById('pl-gp').textContent = '¥' + gp.toFixed(0);
+  document.getElementById('pl-gp-pct').textContent = rev > 0 ? (gp / rev * 100).toFixed(0) : '—';
+  document.getElementById('pl-opex').textContent = '¥' + opex.toFixed(0);
+  document.getElementById('pl-opex-pct').textContent = rev > 0 ? (opex / rev * 100).toFixed(0) : '—';
+  document.getElementById('pl-net').textContent = '¥' + netProfit.toFixed(0);
+  document.getElementById('pl-net').style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('pl-net-pct').textContent = rev > 0 ? (netProfit / rev * 100).toFixed(1) : '—';
+
+  // WORKING CAPITAL
   const recDays = rev > 0 ? (rec / (rev / 30)) : 0;
   const invDays = cogs > 0 ? (inv / (cogs / 30)) : 0;
   const payDays = cogs > 0 ? (pay / (cogs / 30)) : 0;
   const cycle = recDays + invDays - payDays;
-
   document.getElementById('wc-rec').textContent = recDays.toFixed(0);
   document.getElementById('wc-inv').textContent = invDays.toFixed(0);
   document.getElementById('wc-pay').textContent = payDays.toFixed(0);
   document.getElementById('wc-cycle').textContent = cycle.toFixed(0);
 
-  document.getElementById('pl-rev').textContent = '¥' + rev.toFixed(0);
-  document.getElementById('pl-cogs').textContent = '¥' + cogs.toFixed(0);
-  document.getElementById('pl-cogs-pct').textContent = (cogs/rev*100).toFixed(0) + '%';
-  document.getElementById('pl-gp').textContent = '¥' + gp.toFixed(0);
-  document.getElementById('pl-gp-pct').textContent = (gp/rev*100).toFixed(0) + '%';
-  document.getElementById('pl-opex').textContent = '¥' + opex.toFixed(0);
-  document.getElementById('pl-opex-pct').textContent = (opex/rev*100).toFixed(0) + '%';
-  document.getElementById('pl-net').textContent = '¥' + netProfit.toFixed(0);
-  document.getElementById('pl-net-pct').textContent = (netProfit/rev*100).toFixed(1) + '%';
-  document.getElementById('pl-net').style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
-
-  document.getElementById('debt-st').textContent = '¥' + stl.toFixed(0);
+  // DEBT
   document.getElementById('debt-od').textContent = '¥' + od.toFixed(0);
+  document.getElementById('debt-st').textContent = '¥' + stl.toFixed(0);
   document.getElementById('debt-lt').textContent = '¥' + ltl.toFixed(0);
-  document.getElementById('debt-total').textContent = '¥' + (stl + od + ltl).toFixed(0);
+  document.getElementById('debt-total').textContent = '¥' + totalDebt.toFixed(0);
+
+  // ACTION PLAN
+  let actions = '';
+  if (rec > 0) actions += '<div class="insight"><div class="insight-title">1️⃣ 加速应收账款回收</div><div class="insight-text">目前应收 ¥' + rec.toFixed(0) + '，缩短5天回收期可释放 ¥' + (rec / 6).toFixed(0) + '</div></div>';
+  if (inv > 0) actions += '<div class="insight"><div class="insight-title">2️⃣ 优化库存管理</div><div class="insight-text">库存占用 ¥' + inv.toFixed(0) + '，减少10%可释放 ¥' + (inv * 0.1).toFixed(0) + '</div></div>';
+  if (od > 0) actions += '<div class="insight"><div class="insight-title">3️⃣ 优先偿还透支</div><div class="insight-text">透支 ¥' + od.toFixed(0) + ' 利息最高，应优先处理</div></div>';
+  if (npm < 0.4) actions += '<div class="insight"><div class="insight-title">4️⃣ 改善毛利率</div><div class="insight-text">当前毛利 ' + (npm * 100).toFixed(1) + '%，目标 ≥40%</div></div>';
+  document.getElementById('action-content').innerHTML = actions || '<div class="insight"><div class="insight-title">✅ 财务无明显问题</div><div class="insight-text">整体状况良好，继续监控现金变化</div></div>';
 }
 
-calculateDashboard();
+recalculate();
 </script>
 
 </body>
