@@ -7,6 +7,8 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.0/dist/tesseract.min.js"></script>
   <style>
     :root {
       --bg: #002528;
@@ -338,6 +340,8 @@ function handleFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   const item = document.createElement('div');
   item.className = 'file-item';
+  item.innerHTML = '<strong>' + (ext === 'pdf' ? '📄' : ext.match(/png|jpg|jpeg/) ? '🖼️' : '📊') + ' ' + file.name + '</strong> ⏳ 处理中...';
+  document.getElementById('fileList').appendChild(item);
 
   if (ext === 'csv') {
     const reader = new FileReader();
@@ -348,7 +352,6 @@ function handleFile(file) {
           const rows = res.data.filter(row => row.Date || row.date);
           uploadedFiles.push({name: file.name, type: 'csv', data: rows});
           item.innerHTML = '<strong>📄 ' + file.name + '</strong> ✅ ' + rows.length + ' 行';
-          document.getElementById('fileList').appendChild(item);
           updateResult();
         }
       });
@@ -369,14 +372,51 @@ function handleFile(file) {
         });
         uploadedFiles.push({name: file.name, type: 'excel', data: allData});
         item.innerHTML = '<strong>📊 ' + file.name + '</strong> ✅ ' + allData.length + ' 行';
-        document.getElementById('fileList').appendChild(item);
         updateResult();
       } catch (err) {
         item.innerHTML = '<strong>📊 ' + file.name + '</strong> ❌ 错误';
-        document.getElementById('fileList').appendChild(item);
       }
     };
     reader.readAsArrayBuffer(file);
+  }
+  else if (ext === 'pdf') {
+    const reader = new FileReader();
+    reader.onload = e => {
+      pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise.then(pdf => {
+        let text = '';
+        let pageCount = 0;
+        const processPages = async () => {
+          for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map(item => item.str).join(' ') + ' ';
+            pageCount++;
+          }
+          uploadedFiles.push({name: file.name, type: 'pdf', text: text});
+          item.innerHTML = '<strong>📄 ' + file.name + '</strong> ✅ ' + pageCount + ' 页';
+          updateResult();
+        };
+        processPages();
+      }).catch(err => {
+        item.innerHTML = '<strong>📄 ' + file.name + '</strong> ❌ PDF解析失败';
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  else if (ext.match(/png|jpg|jpeg|gif|webp/)) {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        const result = await Tesseract.recognize(e.target.result, 'chi_sim');
+        const text = result.data.text;
+        uploadedFiles.push({name: file.name, type: 'image', text: text});
+        item.innerHTML = '<strong>🖼️ ' + file.name + '</strong> ✅ OCR完成';
+        updateResult();
+      } catch (err) {
+        item.innerHTML = '<strong>🖼️ ' + file.name + '</strong> ⚠️ OCR进行中...';
+      }
+    };
+    reader.readAsDataURL(file);
   }
 }
 
@@ -392,26 +432,72 @@ function processAndEnter() {
   let data = {};
   uploadedFiles.forEach(file => {
     if (file.data) {
+      // 处理结构化数据 (Excel/CSV)
       file.data.forEach(row => {
         Object.keys(row).forEach(key => {
           const val = parseFloat(row[key]);
           if (!isNaN(val) && val > 0) {
             const k = key.toLowerCase();
-            if (k.includes('cash') || k.includes('balance')) data.cash = Math.max(data.cash || 0, val);
-            if (k.includes('receivable')) data.rec = Math.max(data.rec || 0, val);
-            if (k.includes('payable')) data.pay = Math.max(data.pay || 0, val);
-            if (k.includes('revenue') || k.includes('sales') || k.includes('income')) data.rev = Math.max(data.rev || 0, val);
-            if (k.includes('cogs') || k.includes('cost')) data.cogs = Math.max(data.cogs || 0, val);
+            if (k.includes('cash') || k.includes('balance') || k.includes('现金')) data.cash = Math.max(data.cash || 0, val);
+            if (k.includes('receivable') || k.includes('应收')) data.rec = Math.max(data.rec || 0, val);
+            if (k.includes('payable') || k.includes('应付')) data.pay = Math.max(data.pay || 0, val);
+            if (k.includes('inventory') || k.includes('库存')) data.inv = Math.max(data.inv || 0, val);
+            if (k.includes('revenue') || k.includes('sales') || k.includes('income') || k.includes('收入')) data.rev = Math.max(data.rev || 0, val);
+            if (k.includes('cogs') || k.includes('cost') || k.includes('成本')) data.cogs = Math.max(data.cogs || 0, val);
+            if (k.includes('overdraft') || k.includes('透支')) data.od = Math.max(data.od || 0, val);
+            if (k.includes('loan') || k.includes('debt') || k.includes('贷款')) {
+              if (k.includes('short') || k.includes('短期')) data.stl = Math.max(data.stl || 0, val);
+              else if (k.includes('long') || k.includes('长期')) data.ltl = Math.max(data.ltl || 0, val);
+            }
+            if (k.includes('opex') || k.includes('expense') || k.includes('费用')) data.opex = Math.max(data.opex || 0, val);
+            if (k.includes('finance') || k.includes('interest') || k.includes('利息')) data.fin = Math.max(data.fin || 0, val);
           }
         });
       });
     }
+    else if (file.text) {
+      // 处理非结构化文本 (PDF/Image OCR)
+      const text = file.text;
+      // 提取数字模式: "现金: 100000" 或 "Cash: 100000" 等
+      const patterns = {
+        cash: /(?:现金|cash|余额|balance)[：:]\s*([0-9,]+)/gi,
+        rec: /(?:应收|receivable)[：:]\s*([0-9,]+)/gi,
+        pay: /(?:应付|payable)[：:]\s*([0-9,]+)/gi,
+        inv: /(?:库存|inventory)[：:]\s*([0-9,]+)/gi,
+        rev: /(?:收入|revenue|销售|sales)[：:]\s*([0-9,]+)/gi,
+        cogs: /(?:成本|cogs|cost)[：:]\s*([0-9,]+)/gi,
+        od: /(?:透支|overdraft)[：:]\s*([0-9,]+)/gi,
+        stl: /(?:短期贷款|short-term|短贷)[：:]\s*([0-9,]+)/gi,
+        ltl: /(?:长期贷款|long-term|长贷)[：:]\s*([0-9,]+)/gi,
+        opex: /(?:运营费用|opex|expense)[：:]\s*([0-9,]+)/gi,
+        fin: /(?:财务费用|利息|interest)[：:]\s*([0-9,]+)/gi
+      };
+
+      Object.keys(patterns).forEach(key => {
+        let match;
+        while ((match = patterns[key].exec(text)) !== null) {
+          const val = parseFloat(match[1].replace(/,/g, ''));
+          if (!isNaN(val) && val > 0) {
+            data[key] = Math.max(data[key] || 0, val);
+          }
+        }
+      });
+    }
   });
+
+  // 填充表单
   if (data.cash) document.getElementById('input-cash').value = data.cash;
   if (data.rec) document.getElementById('input-rec').value = data.rec;
   if (data.pay) document.getElementById('input-pay').value = data.pay;
+  if (data.inv) document.getElementById('input-inv').value = data.inv;
   if (data.rev) document.getElementById('input-rev').value = data.rev;
   if (data.cogs) document.getElementById('input-cogs').value = data.cogs;
+  if (data.od) document.getElementById('input-od').value = data.od;
+  if (data.stl) document.getElementById('input-stl').value = data.stl;
+  if (data.ltl) document.getElementById('input-ltl').value = data.ltl;
+  if (data.opex) document.getElementById('input-opex').value = data.opex;
+  if (data.fin) document.getElementById('input-fin').value = data.fin;
+
   showPage('dashboard');
   setTimeout(() => recalculate(), 100);
 }
